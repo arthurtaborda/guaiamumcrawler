@@ -1,0 +1,101 @@
+
+@(currentPage: Page[TwitterTweet], currentSortBy: String, currentOrder: String, currentFilter: String, currentUsername: String, usernames: List[String])
+
+@import org.joda.time.DateTime
+@import helper.twitterBootstrap._
+@import tags._
+
+@link(newPage:Int, newSortBy:String, newUsername:String) = @{
+
+	var sortBy = currentSortBy
+	var order = currentOrder
+	var username = currentUsername
+
+	if(newUsername != null) {
+		username = newUsername
+	}
+
+	if(newSortBy != null) {
+		sortBy = newSortBy
+		order = "asc"
+		if(currentSortBy == newSortBy) {
+			if(currentOrder == "asc") {
+				order = "desc"
+			}
+		}
+	}
+
+	routes.YoutubeController.ytVideos(newPage, sortBy, order, currentFilter, username)
+}
+
+@actionButtons = {
+	<form class="navbar-form" action="@routes.YoutubeController.fetchVideos("")">
+		<input type="text" id="user" name="user" class="span2" placeholder="Username" required>
+		<button type="submit" class="btn"><i class="icon-arrow-down"></i> Fetch Videos</a>
+	</form>
+}
+
+@main(actionButtons) {
+
+	<div class="pull-left">
+		@searchBox(currentFilter, link(1, "uploadDate", null))
+	</div>
+
+	<div class="pull-right">
+		@if(currentPage.getTotalRowCount > 0) {
+			<a class="btn" href="@routes.YoutubeController.downloadXlsFile(currentUsername)"><i class="icon-th-list"></i> Download XLS</a>
+		}
+
+		<div class="input-append dropdown combobox">
+			<input class="span2" type="text" value="@if(currentUsername == ""){Show all users}else{@currentUsername}"><button class="btn" data-toggle="dropdown"><i class="caret"></i></button>
+			<ul class="dropdown-menu">
+				<li><a href="@routes.YoutubeController.ytVideos(1, currentSortBy, currentOrder, currentFilter, "")">Show all pages</a></li>
+				@for(username <- usernames) {
+					<li><a href="@routes.YoutubeController.ytVideos(1, currentSortBy, currentOrder, currentFilter, username)">@username</a></li>
+				}
+			</ul>
+		</div>
+	</div>
+
+	@if(currentPage.getTotalRowCount == 0) {
+
+		<div class="well">
+			<em>Nothing to display</em>
+		</div>
+
+	} else {
+
+		<div class="clearfix">
+			<table class="table table-striped table-bordered table-condensed">
+				<thead>
+					<tr>
+						@header("uploadDate", "Date", currentSortBy, currentOrder, link(1, "uploadDate", null))
+						@header("username", "Username", currentSortBy, currentOrder, link(1, "username", null))
+						@header("title", "Title", currentSortBy, currentOrder, link(1, "title", null))
+						@header("viewCount", "Views", currentSortBy, currentOrder, link(1, "viewCount", null))
+						@header("commentCount", "Comments", currentSortBy, currentOrder, link(1, "commentCount", null))
+						@header("likeCount", "Likes", currentSortBy, currentOrder, link(1, "likeCount", null))
+						@header("dislikeCount", "Dislikes", currentSortBy, currentOrder, link(1, "dislikeCount", null))
+					</tr>
+				</thead>
+				<tbody>
+					@for(video <- currentPage.getList) {
+						<tr>
+							<td style="white-space: nowrap">
+								@(new DateTime(video.uploadDate).toString("HH:mm:ss dd/MM/yyyy"))
+							</td>
+							<td>@video.username</td>
+							<td><a href="@video.link" title="Open comments of this video" target="_blank">@video.title</a></td>
+							<td>@video.viewCount</td>
+							<td>@video.commentCount</td>
+							<td>@video.likeCount</td>
+							<td>@video.dislikeCount</td>
+						</tr>
+					}
+				</tbody>
+			</table>
+		</div>
+
+		@pagination(currentPage, link(1, null, null), link(currentPage.getPageIndex - 1, null, null), link(currentPage.getPageIndex + 1, null, null), link(0, null, null))
+	}
+}

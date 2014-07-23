@@ -1,0 +1,45 @@
+# Routes
+# This file defines all application routes (Higher priority routes first)
+# ~~~~
+
+# Home page
+GET 	/									controllers.FacebookController.index(sourceId ?= "", sourceName ?= "")
+
+# Home page
+GET 	/twitter							controllers.TwitterController.index(username ?= "")
+
+# Home page
+GET 	/twitter/tweets						controllers.TwitterController.ttTweets(p:Int ?= 1, s ?= "uploadDate", o ?= "desc", f ?= "", username ?= "")
+
+# Home page
+GET 	/youtube							controllers.YoutubeController.index(username ?= "")
+
+# Home page
+GET 	/youtube/fetchVideos				controllers.YoutubeController.fetchVideos(user: String)
+
+# Home page
+GET 	/youtube/downloadXls				controllers.YoutubeController.downloadXlsFile(user ?= "")
+
+# Home page
+GET 	/youtube/videos						controllers.YoutubeController.ytVideos(p:Int ?= 1, s ?= "uploadDate", o ?= "desc", f ?= "", username ?= "")
+
+# Post list (look at the default values for pagination parameters)
+GET 	/facebook							controllers.FacebookController.fbPosts(p:Int ?= 1, s ?= "createdTime", o ?= "desc", f ?= "", sourceId ?= "", sourceName ?= "")
+
+# Post list (look at the default values for pagination parameters)
+GET 	/facebook/posts						controllers.FacebookController.fbPosts(p:Int ?= 1, s ?= "createdTime", o ?= "desc", f ?= "", sourceId ?= "", sourceName ?= "")
+
+# Post list (look at the default values for pagination parameters)
+GET 	/facebook/comments					controllers.FacebookController.fbComments(p:Int ?= 1, s ?= "createdTime", o ?= "asc", f ?= "", key ?= "")
+
+#Fetch Facebook Comments
+POST	/facebook/downloadComments			controllers.FacebookController.generateXlsFile(ids: String)
+
+#Fetch Facebook Posts
+GET 	/facebook/fetchPosts				controllers.FacebookController.fetchPosts(pageName: String, limit:Int)
+
+#Fetch Facebook Comments
+GET 	/facebook/fetchComments				controllers.FacebookController.fetchCommentsFromPostKey(key: String)
+
+# Map static resources from the /public folder to the /assets URL path
+GET 	/assets/*file						controllers.Assets.at(path="/public", file)

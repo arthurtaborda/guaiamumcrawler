@@ -1,0 +1,9 @@
+@(currentFilter:String, link:Call, extraAttributes: Html = Html(""))
+
+<form class="form-search" action="@link">
+	<div class="input-append">
+		<input type="search" id="searchbox" name="f" value="@currentFilter" class="search-query input-xlarge" placeholder="Search for message...">
+		@extraAttributes
+		<button type="submit" id="searchsubmit" value="Search" class="btn"><i class="icon-search"></i></button>
+	</div>
+</form>

@@ -1,0 +1,38 @@
+@(actionButtons: Html)(content: Html)
+
+<!DOCTYPE html>
+
+<html class="fuelux" lang="en">
+	<head>
+		<title>Guaiamum Social Web Crawler</title>
+		<link rel="shortcut icon" type="image/png" href="@routes.Assets.at("images/favicon.png")">
+		<link rel="stylesheet" type="text/css" media="screen" href="@routes.Assets.at("stylesheets/fuelux.css")">
+		<link rel="stylesheet" type="text/css" media="screen" href="@routes.Assets.at("stylesheets/fuelux-responsive.css")">
+		<link rel="stylesheet" type="text/css" media="screen" href="@routes.Assets.at("stylesheets/bootstrap.min.css")">
+		<link rel="stylesheet" type="text/css" media="screen" href="@routes.Assets.at("stylesheets/bootstrap-responsive.css")">
+		<link rel="stylesheet" type="text/css" media="screen" href="@routes.Assets.at("stylesheets/main.css")">
+		<script src="@routes.Assets.at("javascripts/jquery-1.9.0.min.js")" type="text/javascript"></script>
+		<script src="@routes.Assets.at("javascripts/bootstrap.min.js")" type="text/javascript"></script>
+	</head>
+	<body>
+		<div class="navbar navbar-static-top">
+			<div class="navbar-inner">
+				<a class="brand" href="@routes.FacebookController.index()">Guaiamum</a>
+
+				<ul class="nav">
+					<li><a href="@routes.FacebookController.index()">Facebook</a></li>
+					<li><a href="@routes.YoutubeController.index()">Youtube</a></li>
+				</ul>
+
+				<div class="pull-right">
+					@actionButtons
+				</div>
+			</div>
+		</div>
+
+		<section id="main">
+			@content
+		</section>
+
+	</body>
+</html>

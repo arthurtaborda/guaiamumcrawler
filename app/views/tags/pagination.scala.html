@@ -1,0 +1,41 @@
+@(currentPage: Page[_], gotoFirstPage:Call, gotoPreviousPage:Call, gotoNextPage:Call, gotoLastPage:Call)
+
+<div id="pagination" class="pagination">
+	<ul>
+		@if(currentPage.hasPrev) {
+			<li class="prev">
+				<a href="@gotoFirstPage">&laquo;&laquo;</a>
+			</li>
+			<li class="prev">
+				<a href="@gotoPreviousPage">&laquo;</a>
+			</li>
+		} else {
+			<li class="prev disabled">
+				<a>&laquo;&laquo;</a>
+			</li>
+			<li class="prev disabled">
+				<a>&laquo;</a>
+			</li>
+		}
+
+		<li class="current">
+			<a>Displaying @currentPage.getDisplayXtoYofZ</a>
+		</li>
+
+		@if(currentPage.hasNext) {
+			<li class="next">
+				<a href="@gotoNextPage">&raquo;</a>
+			</li>
+			<li class="next">
+				<a href="@gotoLastPage">&raquo;&raquo;</a>
+			</li>
+		} else {
+			<li class="next disabled">
+				<a>&raquo;</a>
+			</li>
+			<li class="next disabled">
+				<a>&raquo;&raquo;</a>
+			</li>
+		}
+	</ul>
+</div>

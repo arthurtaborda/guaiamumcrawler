@@ -1,0 +1,5 @@
+@(key:String, title:String, currentSortBy: String, currentOrder: String, link:Call)
+
+<th style="white-space: nowrap" class="@key.replace(".","_") header @if(currentSortBy == key) @{if(currentOrder == "asc") "headerSortDown" else "headerSortUp"}">
+    <a href="@link">@title</a>
+</th>
