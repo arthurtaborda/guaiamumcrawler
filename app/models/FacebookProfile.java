@@ -22,7 +22,7 @@ public class FacebookProfile {
 	@GeneratedValue(strategy = GenerationType.SEQUENCE)
 	private Long id;
 
-	@Column(name = "profile_id")
+	@Column(name = "profile_id", unique = true)
 	private String profileId;
 
 	@Column
@@ -93,7 +93,7 @@ public class FacebookProfile {
 	}
 
 	public String getLink() {
-		return "http://facebook.com/" + id;
+		return "http://facebook.com/" + profileId;
 	}
 
 	public List<FacebookPost> getPosts() {
@@ -121,7 +121,7 @@ public class FacebookProfile {
 		FacebookProfile profile;
 
 		try {
-			profile = (FacebookProfile) JPA.em().createQuery("from FacebookProfile p where p.profileId = ?").setParameter(1, key).getSingleResult();
+			profile = (FacebookProfile) JPA.em().createQuery("from FacebookProfile where profileId = ?").setParameter(1, key).getSingleResult();
 		} catch (javax.persistence.NoResultException e) {
 			return null;
 		}

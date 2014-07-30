@@ -61,7 +61,8 @@
 			<thead>
 				<tr>
 					@header("createdTime", "Date", currentSortBy, currentOrder, link(0, "createdTime"))
-					@header("author.getName", "Author Name", currentSortBy, currentOrder, link(0, "author.getName"))
+					@header("likeCount", "Like Count", currentSortBy, currentOrder, link(0, "likeCount"))
+					@header("author.name", "Author Name", currentSortBy, currentOrder, link(0, "author.name"))
 					@header("message", "Message", currentSortBy, currentOrder, link(0, "message"))
 				</tr>
 			</thead>
@@ -71,6 +72,9 @@
 					<tr>
 						<td style="white-space: nowrap">
 							@(new DateTime(comment.getCreatedTime).toString("HH:mm:ss dd/MM/yyyy"))
+						</td>
+						<td>
+							@comment.getLikeCount
 						</td>
 						<td style="white-space: nowrap">
 							<a title="Go to the user page on facebook" href="http://www.facebook.com/@comment.getAuthor.getProfileId" target="_blank">@comment.getAuthor.getName</a>

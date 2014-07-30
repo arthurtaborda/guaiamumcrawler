@@ -4,7 +4,6 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -27,21 +26,17 @@ import play.mvc.Result;
 import views.html.fbComments;
 import views.html.fbPosts;
 
-import com.restfb.Connection;
 import com.restfb.DefaultFacebookClient;
-import com.restfb.FacebookClient;
-import com.restfb.Parameter;
-import com.restfb.json.JsonObject;
-import com.restfb.types.Comment;
-import com.restfb.types.Post;
+
+import crawler.FacebookCrawler;
 
 public class FacebookController extends Controller {
 
 	private static final String APP_ID = Play.application().configuration().getString("fb.id");
 	private static final String APP_SECRET = Play.application().configuration().getString("fb.secret");
 
-	private static FacebookClient facebookClient = new DefaultFacebookClient(new DefaultFacebookClient().obtainAppAccessToken(APP_ID, APP_SECRET)
-			.getAccessToken());
+	private static FacebookCrawler crawler = new FacebookCrawler(new DefaultFacebookClient(new DefaultFacebookClient().obtainAppAccessToken(APP_ID, APP_SECRET)
+			.getAccessToken()));
 
 	public static Result index(String sourceId, String sourceName) {
 		return redirect(routes.FacebookController.fbPosts(1, "createdTime", "desc", "", sourceId, sourceName));
@@ -71,34 +66,7 @@ public class FacebookController extends Controller {
 
 	@Transactional
 	public static Result fetchCommentsFromPostKey(String postKey) {
-		Connection<JsonObject> connection = facebookClient.fetchConnection(postKey + "/comments", JsonObject.class, Parameter.with("limit", 5000));
-
-		List<FacebookComment> comments = new ArrayList<FacebookComment>();
-
-		for (List<JsonObject> jsonObjects : connection) {
-			for (JsonObject jsonObject : jsonObjects) {
-				Comment c = facebookClient.getJsonMapper().toJavaObject(jsonObject.toString(), Comment.class);
-
-				FacebookComment fbComment = new FacebookComment(c.getId());
-				FacebookProfile fbAuthor = FacebookProfile.findByProfileId(c.getFrom().getId());
-
-				if (fbAuthor == null) {
-					String type = "user";
-					if (c.getFrom().getCategory() != null)
-						type = "page";
-
-					fbAuthor = new FacebookProfile(c.getFrom().getId(), c.getFrom().getName(), type);
-					fbAuthor.save();
-				}
-
-				fbComment.setMessage(c.getMessage());
-				fbComment.setAuthor(fbAuthor);
-				fbComment.setCreatedTime(c.getCreatedTime());
-
-				comments.add(fbComment);
-			}
-		}
-
+		List<FacebookComment> comments = crawler.fetchCommentsFromPostKey(postKey);
 		FacebookPost post = FacebookPost.findByPostKey(postKey);
 
 		if (post != null) {
@@ -113,68 +81,12 @@ public class FacebookController extends Controller {
 
 	@Transactional
 	public static Result fetchPosts(String sourceId, Integer limit) {
-		JsonObject feed = facebookClient.fetchObject("v2.0/" + sourceId, JsonObject.class, Parameter.with("fields", "name"), Parameter.with("metadata", true));
+		String sourceName = crawler.fetchSource(sourceId).getName();
+		List<FacebookPost> posts = crawler.fetchPosts(sourceId, limit);
 
-		String sourceName = feed.getString("name");
-		String type = feed.getJsonObject("metadata").getString("type");
+		for (FacebookPost facebookPost : posts) {
+			facebookPost.save();
 
-		FacebookProfile fbSource = FacebookProfile.findByProfileId(sourceId);
-
-		if (fbSource == null) {
-			fbSource = new FacebookProfile(sourceId, sourceName, type);
-			fbSource.setIsSource(true);
-			fbSource.save();
-		} else {
-			fbSource.setIsSource(true);
-			FacebookProfile.update(fbSource);
-		}
-
-		if (limit > 250)
-			limit = 250;
-
-		String feedUrl = "/posts";
-		if (type.equals("group"))
-			feedUrl = "/feed";
-
-		Connection<JsonObject> connection = facebookClient.fetchConnection("v2.0/" + sourceId + feedUrl, JsonObject.class, Parameter.with("limit", limit),
-				Parameter.with("fields", "from,id,message,link,created_time,shares,likes.limit(1).summary(true),comments.limit(1).summary(true)"));
-
-		int i = 0;
-		for (List<JsonObject> jsonObjects : connection) {
-			for (JsonObject jsonObject : jsonObjects) {
-				Post p = facebookClient.getJsonMapper().toJavaObject(jsonObject.toString(), Post.class);
-
-				FacebookPost dbPost = FacebookPost.findByPostKey(p.getId());
-				if (dbPost == null) {
-					// if this is coming from a group, the author must be an
-					// user.
-					if (type.equals("group"))
-						type = "user";
-
-					FacebookPost fbPost = new FacebookPost(p.getId());
-					FacebookProfile fbAuthor = FacebookProfile.findByProfileId(p.getFrom().getId());
-
-					if (fbAuthor == null) {
-						fbAuthor = new FacebookProfile(p.getFrom().getId(), p.getFrom().getName(), type);
-						fbAuthor.save();
-					}
-
-					fbPost.setPostKey(p.getId());
-					fbPost.setMessage(p.getMessage() == null || p.getMessage().isEmpty() ? "<NO MESSAGE>" : p.getMessage());
-					fbPost.setAuthor(fbAuthor);
-					fbPost.setCreatedTime(p.getCreatedTime());
-					fbPost.setCommentCount(!jsonObject.has("comments") ? 0 : jsonObject.getJsonObject("comments").getJsonObject("summary")
-							.getLong("total_count"));
-					fbPost.setLikeCount(!jsonObject.has("likes") ? 0 : jsonObject.getJsonObject("likes").getJsonObject("summary").getLong("total_count"));
-					fbPost.setShareCount(p.getSharesCount());
-					fbPost.setSource(fbSource);
-
-					fbPost.save();
-					i++;
-				}
-			}
-			if (i >= limit)
-				break;
 		}
 
 		return index(sourceId, sourceName);

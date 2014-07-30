@@ -31,7 +31,7 @@
 @actionButtons = {
 	<form class="navbar-form" action="@routes.FacebookController.fetchPosts("", 0)">
 		<input type="text" id="limit" name="limit" class="span1" pattern="[0-9]{1,4}" placeholder="Limit" required>
-		<input type="text" id="pageName" name="pageName" class="span2" placeholder="Page name" required>
+		<input type="text" id="pageName" name="pageName" class="span2" placeholder="Source ID" required>
 		<button type="submit" class="btn"><i class="icon-arrow-down"></i> Fetch Posts</a>
 	</form>
 }
@@ -44,9 +44,9 @@
 
 	<div class="pull-right">
 		<div class="input-append dropdown combobox">
-			<input class="span2" type="text" value="@if(currentSourceName == ""){Show all pages}else{@currentSourceName}"><button class="btn" data-toggle="dropdown"><i class="caret"></i></button>
+			<input class="span2" type="text" value="@if(currentSourceName == ""){Show all sources}else{@currentSourceName}"><button class="btn" data-toggle="dropdown"><i class="caret"></i></button>
 			<ul class="dropdown-menu">
-				<li><a href="@routes.FacebookController.fbPosts(1, currentSortBy, currentOrder, currentFilter, "", "")">Show all pages</a></li>
+				<li><a href="@routes.FacebookController.fbPosts(1, currentSortBy, currentOrder, currentFilter, "", "")">Show all sources</a></li>
 				@for(p <- profiles) {
 					<li><a href="@routes.FacebookController.fbPosts(1, currentSortBy, currentOrder, currentFilter, p.getProfileId, p.getName)">@p.getType/@p.getName</a></li>
 				}
@@ -81,7 +81,7 @@
 							<td style="white-space: nowrap">
 								@(new DateTime(post.getCreatedTime).toString("HH:mm:ss dd/MM/yyyy"))
 							</td>
-							<td>@post.getSource.getName</td>
+							<td><a href="@post.getSource.getLink" target="_blank">@post.getSource.getName</a></td>
 							<td><a href="@post.getLink" target="_blank">@post.getMessage</a></td>
 							<td>
 								<a href="@routes.FacebookController.fbComments(0,"createdTime","asc", "", post.getPostKey)" title="Open comments of this post">@post.getCommentCount</a>

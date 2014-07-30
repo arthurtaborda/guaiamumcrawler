@@ -50,6 +50,9 @@ public class FacebookComment {
 
 	private Long createdTime;
 
+	@Column(name = "like_count")
+	private Long likeCount;
+
 	public FacebookComment() {
 	}
 
@@ -168,6 +171,14 @@ public class FacebookComment {
 
 	public void setMessage(String message) {
 		this.message = message;
+	}
+
+	public Long getLikeCount() {
+		return likeCount;
+	}
+
+	public void setLikeCount(Long likeCount) {
+		this.likeCount = likeCount;
 	}
 
 	@Temporal(TemporalType.TIMESTAMP)
