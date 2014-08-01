@@ -1,4 +1,4 @@
-package models;
+package models.facebook;
 
 import javax.persistence.Column;
 import javax.persistence.GeneratedValue;
@@ -11,7 +11,7 @@ public class FacebookFetch {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.SEQUENCE)
-	private Long id;
+	private Long dbId;
 
 	@ManyToOne()
 	@JoinColumn(name = "source_id")
@@ -65,8 +65,8 @@ public class FacebookFetch {
 		this.previous = previous;
 	}
 
-	public Long getId() {
-		return id;
+	public Long getDbId() {
+		return dbId;
 	}
 
 }

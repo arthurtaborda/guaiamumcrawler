@@ -3,9 +3,9 @@ package crawler;
 import java.util.ArrayList;
 import java.util.List;
 
-import models.FacebookComment;
-import models.FacebookPost;
-import models.FacebookProfile;
+import models.facebook.FacebookComment;
+import models.facebook.FacebookPost;
+import models.facebook.FacebookProfile;
 
 import com.restfb.Connection;
 import com.restfb.FacebookClient;
@@ -67,6 +67,22 @@ public class FacebookCrawler {
 	}
 
 	public List<FacebookPost> fetchPosts(String sourceId, Integer limit) {
+		return fetchPosts(sourceId, limit, new Parameter[] {});
+	}
+
+	public List<FacebookPost> fetchPostsSince(String sourceId, Integer limit, Long since) {
+		return fetchPosts(sourceId, limit, Parameter.with("since", since));
+	}
+
+	public List<FacebookPost> fetchPostsUntil(String sourceId, Integer limit, Long until) {
+		return fetchPosts(sourceId, limit, Parameter.with("until", until));
+	}
+
+	public List<FacebookPost> fetchPosts(String sourceId, Integer limit, Long since, Long until) {
+		return fetchPosts(sourceId, limit, Parameter.with("since", since), Parameter.with("until", until));
+	}
+
+	private List<FacebookPost> fetchPosts(String sourceId, Integer limit, Parameter... parameters) {
 		List<FacebookPost> posts = new ArrayList<FacebookPost>();
 
 		FacebookProfile fbSource = FacebookProfile.findByProfileId(sourceId);
@@ -84,25 +100,28 @@ public class FacebookCrawler {
 		if (fbSource.getType().equals("group"))
 			feedUrl = "/feed";
 
-		Connection<JsonObject> connection = facebookClient.fetchConnection("v2.0/" + sourceId + feedUrl, JsonObject.class, Parameter.with("limit", limit),
-				Parameter.with("fields", "status_type,from,id,message,link,created_time,shares,likes.limit(1).summary(true),comments.limit(1).summary(true)"));
+		Parameter[] param = new Parameter[parameters.length + 2];
+		param[parameters.length] = Parameter.with("limit", limit);
+		param[parameters.length + 1] = Parameter.with("fields",
+				"status_type,from,id,message,link,created_time,shares,likes.limit(1).summary(true),comments.limit(1).summary(true)");
+
+		Connection<JsonObject> connection = facebookClient.fetchConnection("v2.0/" + sourceId + feedUrl, JsonObject.class, param);
 
 		int i = 0;
 		for (List<JsonObject> jsonObjects : connection) {
 			for (JsonObject jsonObject : jsonObjects) {
 				Post p = facebookClient.getJsonMapper().toJavaObject(jsonObject.toString(), Post.class);
 
-				FacebookPost dbPost = FacebookPost.findByPostKey(p.getId());
-				if (dbPost == null) {
+				// if is null, this type of post is useless, because it has
+				// no comments or messages. It only happens with pages
+				// apparently.
+				if (fbSource.getType().equals("page") && p.getStatusType() == null) {
+					continue;
+				}
+
+				if (!FacebookPost.exists(p.getId())) {
 					FacebookPost fbPost = new FacebookPost(p.getId());
 					FacebookProfile fbAuthor = FacebookProfile.findByProfileId(p.getFrom().getId());
-
-					// if is null, this type of post is useless, because it has
-					// no comments or messages. It only happens with pages
-					// apparently.
-					if (fbSource.getType().equals("page") && p.getStatusType() == null) {
-						continue;
-					}
 
 					if (fbAuthor == null) {
 						// if this is coming from a group, the author must be

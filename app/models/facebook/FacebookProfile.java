@@ -1,4 +1,4 @@
-package models;
+package models.facebook;
 
 import java.util.List;
 
@@ -20,7 +20,7 @@ public class FacebookProfile {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.SEQUENCE)
-	private Long id;
+	private Long dbId;
 
 	@Column(name = "profile_id", unique = true)
 	private String profileId;
@@ -31,8 +31,17 @@ public class FacebookProfile {
 	@Column
 	private String type;
 
-	@Column
+	@Column(name = "is_source")
 	private Boolean isSource;
+
+	@Column(name = "last_time_scanned")
+	private Long lastTimeScanned;
+
+	@Column(name = "average_time_post")
+	private Long averageTimePost;
+
+	@Column(name = "totally_scanned")
+	private Boolean totallyScanned;
 
 	@OneToMany(cascade = { CascadeType.ALL })
 	@JoinColumn(name = "profile_id")
@@ -56,8 +65,8 @@ public class FacebookProfile {
 		this.type = type;
 	}
 
-	public Long getId() {
-		return id;
+	public Long getDbId() {
+		return dbId;
 	}
 
 	public String getProfileId() {
@@ -112,9 +121,33 @@ public class FacebookProfile {
 		this.comments = comments;
 	}
 
+	public Long getLastTimeScanned() {
+		return lastTimeScanned;
+	}
+
+	public void setLastTimeScanned(Long lastTimeScanned) {
+		this.lastTimeScanned = lastTimeScanned;
+	}
+
+	public Long getAverageTimePost() {
+		return averageTimePost;
+	}
+
+	public void setAverageTimePost(Long averageTimePost) {
+		this.averageTimePost = averageTimePost;
+	}
+
+	public Boolean isTotallyScanned() {
+		return totallyScanned;
+	}
+
+	public void setTotallyScanned(Boolean totallyScanned) {
+		this.totallyScanned = totallyScanned;
+	}
+
 	@Override
 	public String toString() {
-		return "FacebookProfile [id=" + id + ", name=" + name + "]";
+		return "FacebookProfile [id=" + dbId + ", name=" + name + "]";
 	}
 
 	public static FacebookProfile findByProfileId(String key) {

@@ -2,7 +2,7 @@
  * To change this template, choose Tools | Templates
  * and open the template in the editor.
  */
-package models;
+package models.facebook;
 
 import java.math.BigDecimal;
 import java.util.Date;
@@ -21,6 +21,7 @@ import javax.persistence.Table;
 import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
 
+import models.Page;
 import play.db.jpa.JPA;
 
 /**
@@ -33,7 +34,7 @@ public class FacebookPost {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.SEQUENCE)
-	private Long id;
+	private Long dbId;
 
 	@OneToMany(cascade = { CascadeType.ALL })
 	@JoinColumn(name = "post_id")
@@ -152,6 +153,16 @@ public class FacebookPost {
 		return JPA.em().find(FacebookPost.class, id);
 	}
 
+	public static Boolean exists(long id) {
+		boolean exists = (Long) JPA.em().createQuery("select count(*) from FacebookPost where id = ?").setParameter(1, id).getSingleResult() >= 1;
+		return exists;
+	}
+
+	public static Boolean exists(String postKey) {
+		boolean exists = (Long) JPA.em().createQuery("select count(*) from FacebookPost where postKey = ?").setParameter(1, postKey).getSingleResult() >= 1;
+		return exists;
+	}
+
 	@Override
 	public boolean equals(Object o) {
 		if (!(o instanceof FacebookPost)) {
@@ -172,8 +183,8 @@ public class FacebookPost {
 		return hash;
 	}
 
-	public Long getId() {
-		return id;
+	public Long getDbId() {
+		return dbId;
 	}
 
 	public List<FacebookComment> getComments() {

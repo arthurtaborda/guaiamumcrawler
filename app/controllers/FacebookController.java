@@ -1,5 +1,7 @@
 package controllers;
 
+import global.Global;
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -10,33 +12,25 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import models.FacebookComment;
-import models.FacebookPost;
-import models.FacebookProfile;
+import models.facebook.FacebookComment;
+import models.facebook.FacebookPost;
+import models.facebook.FacebookProfile;
 
 import org.apache.poi.hssf.usermodel.HSSFSheet;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
 
-import play.Play;
 import play.db.jpa.Transactional;
 import play.mvc.Controller;
 import play.mvc.Result;
 import views.html.fbComments;
 import views.html.fbPosts;
-
-import com.restfb.DefaultFacebookClient;
-
 import crawler.FacebookCrawler;
 
 public class FacebookController extends Controller {
 
-	private static final String APP_ID = Play.application().configuration().getString("fb.id");
-	private static final String APP_SECRET = Play.application().configuration().getString("fb.secret");
-
-	private static FacebookCrawler crawler = new FacebookCrawler(new DefaultFacebookClient(new DefaultFacebookClient().obtainAppAccessToken(APP_ID, APP_SECRET)
-			.getAccessToken()));
+	private static final FacebookCrawler crawler = Global.getCrawler();
 
 	public static Result index(String sourceId, String sourceName) {
 		return redirect(routes.FacebookController.fbPosts(1, "createdTime", "desc", "", sourceId, sourceName));

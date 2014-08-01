@@ -2,7 +2,7 @@
  * To change this template, choose Tools | Templates
  * and open the template in the editor.
  */
-package models;
+package models.facebook;
 
 import java.math.BigDecimal;
 import java.util.Arrays;
@@ -20,6 +20,7 @@ import javax.persistence.Table;
 import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
 
+import models.Page;
 import play.db.jpa.JPA;
 
 /**
@@ -32,7 +33,7 @@ public class FacebookComment {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.SEQUENCE)
-	private Long id;
+	private Long dbId;
 
 	@ManyToOne()
 	@JoinColumn(name = "post_id")
@@ -133,12 +134,12 @@ public class FacebookComment {
 	 */
 	@Override
 	public String toString() {
-		return "FacebookComment [id=" + id + ", post=" + post + ", commentKey=" + commentKey + ", author=" + author + ", message=" + message + ", createdTime="
-				+ createdTime + "]";
+		return "FacebookComment [id=" + dbId + ", post=" + post + ", commentKey=" + commentKey + ", author=" + author + ", message=" + message
+				+ ", createdTime=" + createdTime + "]";
 	}
 
-	public Long getId() {
-		return id;
+	public Long getDbId() {
+		return dbId;
 	}
 
 	public FacebookPost getPost() {

@@ -1,4 +1,4 @@
-@(currentPage: Page[FacebookPost], currentSortBy: String, currentOrder: String, currentFilter: String, currentSourceId: String, currentSourceName: String, profiles: List[FacebookProfile])
+@(currentPage: Page[models.facebook.FacebookPost], currentSortBy: String, currentOrder: String, currentFilter: String, currentSourceId: String, currentSourceName: String, profiles: List[models.facebook.FacebookProfile])
 
 @import org.joda.time.DateTime
 @import helper.twitterBootstrap._
@@ -67,7 +67,7 @@
 				<thead>
 					<tr>
 						@header("createdTime", "Date", currentSortBy, currentOrder, link(1, "createdTime", null))
-						@header("source.getName", "Source Name", currentSortBy, currentOrder, link(1, "source.getName", null))
+						@header("source.name", "Source Name", currentSortBy, currentOrder, link(1, "source.name", null))
 						@header("message", "Message", currentSortBy, currentOrder, link(1, "message", null))
 						@header("commentCount", "Comments", currentSortBy, currentOrder, link(1, "commentCount", null))
 						@header("likeCount", "Likes", currentSortBy, currentOrder, link(1, "likeCount", null))
