@@ -10,7 +10,6 @@ import models.YoutubeVideo;
 
 import org.joda.time.DateTime;
 
-import play.db.jpa.Transactional;
 import play.mvc.Controller;
 import play.mvc.Result;
 import util.ExcelUtil;
@@ -32,12 +31,10 @@ public class YoutubeController extends Controller {
 		return redirect(routes.YoutubeController.ytVideos(1, "uploadDate", "desc", "", username));
 	}
 
-	@Transactional(readOnly = true)
 	public static Result ytVideos(int page, String sortBy, String order, String filter, String username) {
 		return ok(ytVideos.render(YoutubeVideo.page(page, 10, sortBy, order, filter, username), sortBy, order, filter, username, YoutubeVideo.listUsernames()));
 	}
 
-	@Transactional
 	public static Result fetchVideos(String username) throws MalformedURLException, IOException, ServiceException {
 
 		List<VideoEntry> videoEntries;
@@ -58,7 +55,6 @@ public class YoutubeController extends Controller {
 		return index(username);
 	}
 
-	@Transactional(readOnly = true)
 	public static Result downloadXlsFile(String username) {
 		List<YoutubeVideo> videos = YoutubeVideo.findByUsername(username);
 

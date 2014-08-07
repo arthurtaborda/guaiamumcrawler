@@ -42,7 +42,7 @@
 	</div>
 
 	<div class="pull-right">
-		@if(currentPage.getTotalRowCount > 0) {
+		@if(currentPage.totalRowCount > 0) {
 			<a class="btn" href="@routes.YoutubeController.downloadXlsFile(currentUsername)"><i class="icon-th-list"></i> Download XLS</a>
 		}
 
@@ -57,7 +57,7 @@
 		</div>
 	</div>
 
-	@if(currentPage.getTotalRowCount == 0) {
+	@if(currentPage.totalRowCount == 0) {
 
 		<div class="well">
 			<em>Nothing to display</em>
@@ -79,7 +79,7 @@
 					</tr>
 				</thead>
 				<tbody>
-					@for(video <- currentPage.getList) {
+					@for(video <- currentPage.list) {
 						<tr>
 							<td style="white-space: nowrap">
 								@(new DateTime(video.uploadDate).toString("HH:mm:ss dd/MM/yyyy"))
@@ -96,6 +96,6 @@
 			</table>
 		</div>
 
-		@pagination(currentPage, link(1, null, null), link(currentPage.getPageIndex - 1, null, null), link(currentPage.getPageIndex + 1, null, null), link(0, null, null))
+		@pagination(currentPage, link(1, null, null), link(currentPage.pageIndex - 1, null, null), link(currentPage.pageIndex + 1, null, null), link(0, null, null))
 	}
 }

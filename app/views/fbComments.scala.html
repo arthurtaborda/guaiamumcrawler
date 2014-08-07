@@ -1,4 +1,4 @@
-@(currentSource: Page[models.facebook.FacebookComment], currentSortBy: String, currentOrder: String, currentFilter: String, postKey: String)
+@(currentSource: Page[models.facebook.FBComment], currentSortBy: String, currentOrder: String, currentFilter: String, postKey: String)
 
 @import org.joda.time.DateTime
 @import tags._
@@ -11,10 +11,10 @@
 	if(newSortBy != null) {
 		sortBy = newSortBy
 		if(currentSortBy == newSortBy) {
-			if(currentOrder == "asc") {
-				order = "desc"
+			if(currentOrder == "") {
+				order = "-"
 			} else {
-				order = "asc"
+				order = ""
 			}
 		} else {
 			order = prefFirstOrder
@@ -29,8 +29,8 @@
 
 	var ids = ""
 
-	for(comment <- currentSource.getList) {
-		ids += comment.getCommentKey + ","
+	for(comment <- currentSource.list) {
+		ids += comment.id + ","
 	}
 
 	routes.FacebookController.generateXlsFile(ids)
@@ -47,7 +47,7 @@
 
 @main(actionButtons) {
 
-	@if(currentSource.getTotalRowCount == 0) {
+	@if(currentSource.totalRowCount == 0) {
 
 		<div class="well">
 			<em>Nothing to display</em>
@@ -55,38 +55,38 @@
 
 	} else {
 
-		@searchBox(currentFilter, link(0, "message", "desc"), extraAttributes)
+		@searchBox(currentFilter, link(0, "message", "-"), extraAttributes)
 
 		<table class="table table-striped table-bordered table-condensed">
 			<thead>
 				<tr>
-					@header("createdTime", "Date", currentSortBy, currentOrder, link(1, "createdTime", "desc"))
-					@header("likeCount", "Like Count", currentSortBy, currentOrder, link(1, "likeCount", "desc"))
-					@header("author.name", "Author Name", currentSortBy, currentOrder, link(1, "author.name", "asc"))
-					@header("message", "Message", currentSortBy, currentOrder, link(1, "message", "desc"))
+					@header("createdTime", "Date", currentSortBy, currentOrder, link(1, "createdTime", "-"))
+					@header("likeCount", "Like Count", currentSortBy, currentOrder, link(1, "likeCount", "-"))
+					@header("author.name", "Author Name", currentSortBy, currentOrder, link(1, "author.name", ""))
+					@header("message", "Message", currentSortBy, currentOrder, link(1, "message", "-"))
 				</tr>
 			</thead>
 			<tbody>
 
-				@for(comment <- currentSource.getList) {
+				@for(comment <- currentSource.list) {
 					<tr>
 						<td style="white-space: nowrap">
-							@(new DateTime(comment.getCreatedTime).toString("HH:mm:ss dd/MM/yyyy"))
+							@(new DateTime(comment.createdTime).toString("HH:mm:ss dd/MM/yyyy"))
 						</td>
 						<td>
-							@comment.getLikeCount
+							@comment.likeCount
 						</td>
 						<td style="white-space: nowrap">
-							<a title="Go to the user page on facebook" href="http://www.facebook.com/@comment.getAuthor.getProfileId" target="_blank">@comment.getAuthor.getName</a>
+							<a title="Go to the user page on facebook" href="http://www.facebook.com/@comment.author.id" target="_blank">@comment.author.name</a>
 						</td>
 						<td>
-							@comment.getMessage
+							@comment.message
 						</td>
 					</tr>
 				}
 			</tbody>
 		</table>
 
-		@pagination(currentSource, link(1, null, ""), link(currentSource.getPageIndex - 1, null, ""), link(currentSource.getPageIndex + 1, null, ""), link(0, null, ""))
+		@pagination(currentSource, link(1, null, ""), link(currentSource.pageIndex - 1, null, ""), link(currentSource.pageIndex + 1, null, ""), link(0, null, ""))
 	}
 }

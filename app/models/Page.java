@@ -1,31 +1,20 @@
 package models;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 public class Page<T> {
 
-	private final int pageSize;
-	private final long totalRowCount;
-	private final int pageIndex;
-	private final List<T> list;
+	public final int pageSize;
+	public final int totalRowCount;
+	public final int pageIndex;
+	public final List<T> list;
 
-	public Page(List<T> data, long total, int page, int pageSize) {
+	public Page(List<T> data, int total, int page, int pageSize) {
 		this.list = data;
 		this.totalRowCount = total;
 		this.pageIndex = page;
 		this.pageSize = pageSize;
-	}
-
-	public long getTotalRowCount() {
-		return totalRowCount;
-	}
-
-	public int getPageIndex() {
-		return pageIndex;
-	}
-
-	public List<T> getList() {
-		return list;
 	}
 
 	public boolean hasPrev() {
@@ -45,5 +34,18 @@ public class Page<T> {
 		int start = ((pageIndex - 1) * pageSize + 1);
 		int end = start + Math.min(pageSize, list.size()) - 1;
 		return start + " to " + end + " of " + totalRowCount;
+	}
+
+	public static int adjustPage(int page, int total, int pageSize) {
+		if (page <= 0) { // if page is 0 or less, get last page.
+			if (total < pageSize) {
+				page = 1;
+			} else {
+				BigDecimal bd = new BigDecimal(total).divide(new BigDecimal(pageSize)).setScale(0, BigDecimal.ROUND_HALF_UP);
+				page = bd.intValue();
+			}
+		}
+
+		return page;
 	}
 }

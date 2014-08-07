@@ -3,9 +3,12 @@ package crawler;
 import java.util.ArrayList;
 import java.util.List;
 
-import models.facebook.FacebookComment;
-import models.facebook.FacebookPost;
-import models.facebook.FacebookProfile;
+import models.facebook.FBComment;
+import models.facebook.FBGroup;
+import models.facebook.FBPage;
+import models.facebook.FBPost;
+import models.facebook.FBProfile;
+import models.facebook.FBUser;
 
 import com.restfb.Connection;
 import com.restfb.FacebookClient;
@@ -22,32 +25,31 @@ public class FacebookCrawler {
 		this.facebookClient = facebookClient;
 	}
 
-	public List<FacebookComment> fetchCommentsFromPostKey(String postKey) {
-		Connection<JsonObject> connection = facebookClient.fetchConnection(postKey + "/comments", JsonObject.class,
+	public List<FBComment> fetchCommentsFromPostId(String postId) {
+		Connection<JsonObject> connection = facebookClient.fetchConnection(postId + "/comments", JsonObject.class,
 				Parameter.with("fields", "from,message,like_count,created_time"), Parameter.with("limit", 250));
 
-		List<FacebookComment> comments = new ArrayList<FacebookComment>();
+		List<FBComment> comments = new ArrayList<FBComment>();
 
 		for (List<JsonObject> jsonObjects : connection) {
 			for (JsonObject jsonObject : jsonObjects) {
 				Comment c = facebookClient.getJsonMapper().toJavaObject(jsonObject.toString(), Comment.class);
 
-				FacebookComment fbComment = new FacebookComment(c.getId());
-				FacebookProfile fbAuthor = FacebookProfile.findByProfileId(c.getFrom().getId());
+				FBComment fbComment = new FBComment(c.getId());
+				FBProfile fbAuthor = FBProfile.get(c.getFrom().getId());
 
 				if (fbAuthor == null) {
-					String type = "user";
 					if (c.getFrom().getCategory() != null)
-						type = "page";
+						fbAuthor = new FBPage(c.getFrom().getId(), c.getFrom().getName());
+					else
+						fbAuthor = new FBUser(c.getFrom().getId(), c.getFrom().getName());
 
-					fbAuthor = new FacebookProfile(c.getFrom().getId(), c.getFrom().getName(), type);
 					fbAuthor.save();
 				}
 
-				fbComment.setLikeCount(c.getLikeCount());
-				fbComment.setMessage(c.getMessage());
-				fbComment.setAuthor(fbAuthor);
-				fbComment.setCreatedTime(c.getCreatedTime());
+				fbComment.likeCount = c.getLikeCount();
+				fbComment.message = c.getMessage();
+				fbComment.createdTime = c.getCreatedTime();
 
 				comments.add(fbComment);
 			}
@@ -56,48 +58,48 @@ public class FacebookCrawler {
 		return comments;
 	}
 
-	public FacebookProfile fetchSource(String sourceId) {
+	public FBProfile fetchProfileFeed(String profileId) {
+		JsonObject feed = facebookClient.fetchObject("v2.0/" + profileId, JsonObject.class, Parameter.with("fields", "name"), Parameter.with("metadata", true));
 
-		JsonObject feed = facebookClient.fetchObject("v2.0/" + sourceId, JsonObject.class, Parameter.with("fields", "name"), Parameter.with("metadata", true));
-
-		String sourceName = feed.getString("name");
+		profileId = feed.getString("id");
+		String profileName = feed.getString("name");
 		String type = feed.getJsonObject("metadata").getString("type");
 
-		return new FacebookProfile(sourceId, sourceName, type);
-	}
-
-	public List<FacebookPost> fetchPosts(String sourceId, Integer limit) {
-		return fetchPosts(sourceId, limit, new Parameter[] {});
-	}
-
-	public List<FacebookPost> fetchPostsSince(String sourceId, Integer limit, Long since) {
-		return fetchPosts(sourceId, limit, Parameter.with("since", since));
-	}
-
-	public List<FacebookPost> fetchPostsUntil(String sourceId, Integer limit, Long until) {
-		return fetchPosts(sourceId, limit, Parameter.with("until", until));
-	}
-
-	public List<FacebookPost> fetchPosts(String sourceId, Integer limit, Long since, Long until) {
-		return fetchPosts(sourceId, limit, Parameter.with("since", since), Parameter.with("until", until));
-	}
-
-	private List<FacebookPost> fetchPosts(String sourceId, Integer limit, Parameter... parameters) {
-		List<FacebookPost> posts = new ArrayList<FacebookPost>();
-
-		FacebookProfile fbSource = FacebookProfile.findByProfileId(sourceId);
-
-		if (fbSource == null) {
-			fbSource = fetchSource(sourceId);
-			fbSource.setIsSource(true);
-			fbSource.save();
-		} else if (!fbSource.isSource()) {
-			fbSource.setIsSource(true);
-			FacebookProfile.update(fbSource);
+		FBProfile profile = FBProfile.get(profileId);
+		if (profile == null) {
+			if (type.equals("page")) {
+				profile = new FBPage(profileId, profileName);
+			} else if (type.equals("group")) {
+				profile = new FBGroup(profileId, profileName);
+			} else if (type.equals("user")) {
+				profile = new FBUser(profileId, profileName);
+			}
 		}
 
+		return profile;
+	}
+
+	public List<FBPost> fetchPosts(String sourceId, String sourceType, Integer limit) {
+		return fetchPosts(sourceId, sourceType, limit, new Parameter[] {});
+	}
+
+	public List<FBPost> fetchPostsSince(String sourceId, String sourceType, Integer limit, Long since) {
+		return fetchPosts(sourceId, sourceType, limit, Parameter.with("since", since));
+	}
+
+	public List<FBPost> fetchPostsUntil(String sourceId, String sourceType, Integer limit, Long until) {
+		return fetchPosts(sourceId, sourceType, limit, Parameter.with("until", until));
+	}
+
+	public List<FBPost> fetchPosts(String profileId, String profileType, Integer limit, Long since, Long until) {
+		return fetchPosts(profileId, profileType, limit, Parameter.with("since", since), Parameter.with("until", until));
+	}
+
+	private List<FBPost> fetchPosts(String profileId, String profileType, Integer limit, Parameter... parameters) {
+		List<FBPost> posts = new ArrayList<FBPost>();
+
 		String feedUrl = "/posts";
-		if (fbSource.getType().equals("group"))
+		if (profileType.equals("group"))
 			feedUrl = "/feed";
 
 		Parameter[] param = new Parameter[parameters.length + 2];
@@ -105,7 +107,7 @@ public class FacebookCrawler {
 		param[parameters.length + 1] = Parameter.with("fields",
 				"status_type,from,id,message,link,created_time,shares,likes.limit(1).summary(true),comments.limit(1).summary(true)");
 
-		Connection<JsonObject> connection = facebookClient.fetchConnection("v2.0/" + sourceId + feedUrl, JsonObject.class, param);
+		Connection<JsonObject> connection = facebookClient.fetchConnection("v2.0/" + profileId + feedUrl, JsonObject.class, param);
 
 		int i = 0;
 		for (List<JsonObject> jsonObjects : connection) {
@@ -115,30 +117,36 @@ public class FacebookCrawler {
 				// if is null, this type of post is useless, because it has
 				// no comments or messages. It only happens with pages
 				// apparently.
-				if (fbSource.getType().equals("page") && p.getStatusType() == null) {
+				if (profileType.equals("page") && p.getStatusType() == null) {
 					continue;
 				}
 
-				if (!FacebookPost.exists(p.getId())) {
-					FacebookPost fbPost = new FacebookPost(p.getId());
-					FacebookProfile fbAuthor = FacebookProfile.findByProfileId(p.getFrom().getId());
+				String postId = p.getId();
+
+				if (!FBPost.exists(postId)) {
+					FBPost fbPost = new FBPost(postId);
+					FBProfile fbAuthor = FBProfile.get(p.getFrom().getId());
 
 					if (fbAuthor == null) {
 						// if this is coming from a group, the author must be
 						// user.
-						fbAuthor = new FacebookProfile(p.getFrom().getId(), p.getFrom().getName(), fbSource.getType().equals("group") ? "user" : "page");
+						if (profileType.equals("group") || profileType.equals("user")) {
+							fbAuthor = new FBUser(p.getFrom().getId(), p.getFrom().getName());
+						} else {
+							fbAuthor = new FBPage(p.getFrom().getId(), p.getFrom().getName());
+						}
 						fbAuthor.save();
 					}
 
-					fbPost.setPostKey(p.getId());
-					fbPost.setMessage(p.getMessage() == null || p.getMessage().isEmpty() ? "<NO MESSAGE>" : p.getMessage());
-					fbPost.setAuthor(fbAuthor);
-					fbPost.setCreatedTime(p.getCreatedTime());
-					fbPost.setCommentCount(!jsonObject.has("comments") ? 0 : jsonObject.getJsonObject("comments").getJsonObject("summary")
-							.getLong("total_count"));
-					fbPost.setLikeCount(!jsonObject.has("likes") ? 0 : jsonObject.getJsonObject("likes").getJsonObject("summary").getLong("total_count"));
-					fbPost.setShareCount(p.getSharesCount());
-					fbPost.setSource(fbSource);
+					fbPost.id = postId;
+					fbPost.profileId = profileId;
+					fbPost.authorId = fbAuthor.id;
+					fbPost.message = p.getMessage() == null || p.getMessage().isEmpty() ? "<NO MESSAGE>" : p.getMessage();
+					fbPost.createdTime = p.getCreatedTime();
+					fbPost.commentCount = !jsonObject.has("comments") ? 0 : jsonObject.getJsonObject("comments").getJsonObject("summary")
+							.getLong("total_count");
+					fbPost.likeCount = !jsonObject.has("likes") ? 0 : jsonObject.getJsonObject("likes").getJsonObject("summary").getLong("total_count");
+					fbPost.shareCount = p.getSharesCount();
 
 					posts.add(fbPost);
 					i++;

@@ -1,37 +1,37 @@
-@(currentPage: Page[models.facebook.FacebookPost], currentSortBy: String, currentOrder: String, currentFilter: String, currentSourceId: String, currentSourceName: String, profiles: List[models.facebook.FacebookProfile])
+@(currentPage: Page[models.facebook.FBPost], currentSortBy: String, currentOrder: String, currentFilter: String, currentProfileId: String, currentProfileName: String, profiles: List[models.facebook.FBProfile])
 
 @import org.joda.time.DateTime
 @import helper.twitterBootstrap._
 @import tags._
 
-@link(newSource:Int, newSortBy:String, newSourceName: String) = @{
+@link(newProfile:Int, newSortBy:String, newProfileName: String) = @{
 
 	var sortBy = currentSortBy
 	var order = currentOrder
-	var sourceId = currentSourceId
-	var sourceName = currentSourceName
+	var profileId = currentProfileId
+	var profileName = currentProfileName
 
-	if(newSourceName != null) {
-		sourceName = newSourceName
+	if(newProfileName != null) {
+		profileName = newProfileName
 	}
 
 	if(newSortBy != null) {
 		sortBy = newSortBy
-		order = "asc"
+		order = ""
 		if(currentSortBy == newSortBy) {
-			if(currentOrder == "asc") {
-				order = "desc"
+			if(currentOrder == "") {
+				order = "-"
 			}
 		}
 	}
 
-	routes.FacebookController.fbPosts(newSource, sortBy, order, currentFilter, sourceId, sourceName)
+	routes.FacebookController.fbPosts(newProfile, sortBy, order, currentFilter, profileId, profileName)
 }
 
 @actionButtons = {
 	<form class="navbar-form" action="@routes.FacebookController.fetchPosts("", 0)">
 		<input type="text" id="limit" name="limit" class="span1" pattern="[0-9]{1,4}" placeholder="Limit" required>
-		<input type="text" id="pageName" name="pageName" class="span2" placeholder="Source ID" required>
+		<input type="text" id="pageName" name="pageName" class="span2" placeholder="Profile ID" required>
 		<button type="submit" class="btn"><i class="icon-arrow-down"></i> Fetch Posts</a>
 	</form>
 }
@@ -44,17 +44,17 @@
 
 	<div class="pull-right">
 		<div class="input-append dropdown combobox">
-			<input class="span2" type="text" value="@if(currentSourceName == ""){Show all sources}else{@currentSourceName}"><button class="btn" data-toggle="dropdown"><i class="caret"></i></button>
+			<input class="span2" type="text" value="@if(currentProfileName == ""){Show all profiles}else{@currentProfileName}"><button class="btn" data-toggle="dropdown"><i class="caret"></i></button>
 			<ul class="dropdown-menu">
-				<li><a href="@routes.FacebookController.fbPosts(1, currentSortBy, currentOrder, currentFilter, "", "")">Show all sources</a></li>
+				<li><a href="@routes.FacebookController.fbPosts(1, currentSortBy, currentOrder, currentFilter, "", "")">Show all profiles</a></li>
 				@for(p <- profiles) {
-					<li><a href="@routes.FacebookController.fbPosts(1, currentSortBy, currentOrder, currentFilter, p.getProfileId, p.getName)">@p.getType/@p.getName</a></li>
+					<li><a href="@routes.FacebookController.fbPosts(1, currentSortBy, currentOrder, currentFilter, p.id, p.name)">(@p.getType)@p.name</a></li>
 				}
 			</ul>
 		</div>
 	</div>
 
-	@if(currentPage.getTotalRowCount == 0) {
+	@if(currentPage.totalRowCount == 0) {
 
 		<div class="well">
 			<em>Nothing to display</em>
@@ -67,7 +67,7 @@
 				<thead>
 					<tr>
 						@header("createdTime", "Date", currentSortBy, currentOrder, link(1, "createdTime", null))
-						@header("source.name", "Source Name", currentSortBy, currentOrder, link(1, "source.name", null))
+						@header("profile.name", "Profile Name", currentSortBy, currentOrder, link(1, "profile.name", null))
 						@header("message", "Message", currentSortBy, currentOrder, link(1, "message", null))
 						@header("commentCount", "Comments", currentSortBy, currentOrder, link(1, "commentCount", null))
 						@header("likeCount", "Likes", currentSortBy, currentOrder, link(1, "likeCount", null))
@@ -76,24 +76,24 @@
 				</thead>
 				<tbody>
 
-					@for(post <- currentPage.getList) {
+					@for(post <- currentPage.list) {
 						<tr>
 							<td style="white-space: nowrap">
-								@(new DateTime(post.getCreatedTime).toString("HH:mm:ss dd/MM/yyyy"))
+								@(new DateTime(post.createdTime).toString("HH:mm:ss dd/MM/yyyy"))
 							</td>
-							<td><a href="@post.getSource.getLink" target="_blank">@post.getSource.getName</a></td>
-							<td><a href="@post.getLink" target="_blank">@post.getMessage</a></td>
+							<td><a href="@post.profile.getLink" target="_blank">@post.profile.name</a></td>
+							<td><a href="@post.getLink" target="_blank">@post.message</a></td>
 							<td>
-								<a href="@routes.FacebookController.fbComments(0,"createdTime","asc", "", post.getPostKey)" title="Open comments of this post">@post.getCommentCount</a>
+								<a href="@routes.FacebookController.fbComments(0,"createdTime","", "", post.id)" title="Open comments of this post">@post.commentCount</a>
 							</td>
-							<td>@post.getLikeCount</td>
-							<td>@post.getShareCount</td>
+							<td>@post.likeCount</td>
+							<td>@post.shareCount</td>
 						</tr>
 					}
 				</tbody>
 			</table>
 		</div>
 
-		@pagination(currentPage, link(1, null, null), link(currentPage.getPageIndex - 1, null, null), link(currentPage.getPageIndex + 1, null, null), link(0, null, null))
+		@pagination(currentPage, link(1, null, null), link(currentPage.pageIndex - 1, null, null), link(currentPage.pageIndex + 1, null, null), link(0, null, null))
 	}
 }

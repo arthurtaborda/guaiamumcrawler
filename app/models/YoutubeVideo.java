@@ -112,7 +112,7 @@ public class YoutubeVideo {
 		if (username == null || username.isEmpty())
 			username = "%";
 
-		Long total = (Long) JPA.em().createQuery("select count(c) from YoutubeVideo c where lower(c.title) like ? AND username like ?")
+		int total = (Integer) JPA.em().createQuery("select count(c) from YoutubeVideo c where lower(c.title) like ? AND username like ?")
 				.setParameter(1, "%" + filter.toLowerCase() + "%").setParameter(2, username).getSingleResult();
 
 		if (page <= 0) { // if page is 0 or less, get last page.

@@ -9,7 +9,7 @@ GET 	/									controllers.FacebookController.index(sourceId ?= "", sourceName ?
 GET 	/twitter							controllers.TwitterController.index(username ?= "")
 
 # Home page
-GET 	/twitter/tweets						controllers.TwitterController.ttTweets(p:Int ?= 1, s ?= "uploadDate", o ?= "desc", f ?= "", username ?= "")
+GET 	/twitter/tweets						controllers.TwitterController.ttTweets(p:Int ?= 1, s ?= "uploadDate", o ?= "-", f ?= "", username ?= "")
 
 # Home page
 GET 	/youtube							controllers.YoutubeController.index(username ?= "")
@@ -21,16 +21,16 @@ GET 	/youtube/fetchVideos				controllers.YoutubeController.fetchVideos(user: Str
 GET 	/youtube/downloadXls				controllers.YoutubeController.downloadXlsFile(user ?= "")
 
 # Home page
-GET 	/youtube/videos						controllers.YoutubeController.ytVideos(p:Int ?= 1, s ?= "uploadDate", o ?= "desc", f ?= "", username ?= "")
+GET 	/youtube/videos						controllers.YoutubeController.ytVideos(p:Int ?= 1, s ?= "uploadDate", o ?= "-", f ?= "", username ?= "")
 
 # Post list (look at the default values for pagination parameters)
-GET 	/facebook							controllers.FacebookController.fbPosts(p:Int ?= 1, s ?= "createdTime", o ?= "desc", f ?= "", sourceId ?= "", sourceName ?= "")
+GET 	/facebook							controllers.FacebookController.fbPosts(p:Int ?= 1, s ?= "createdTime", o ?= "-", f ?= "", sourceId ?= "", sourceName ?= "")
 
 # Post list (look at the default values for pagination parameters)
-GET 	/facebook/posts						controllers.FacebookController.fbPosts(p:Int ?= 1, s ?= "createdTime", o ?= "desc", f ?= "", sourceId ?= "", sourceName ?= "")
+GET 	/facebook/posts						controllers.FacebookController.fbPosts(p:Int ?= 1, s ?= "createdTime", o ?= "-", f ?= "", sourceId ?= "", sourceName ?= "")
 
 # Post list (look at the default values for pagination parameters)
-GET 	/facebook/comments					controllers.FacebookController.fbComments(p:Int ?= 1, s ?= "createdTime", o ?= "asc", f ?= "", key ?= "")
+GET 	/facebook/comments					controllers.FacebookController.fbComments(p:Int ?= 1, s ?= "createdTime", o ?= "", f ?= "", key ?= "")
 
 #Fetch Facebook Comments
 POST	/facebook/downloadComments			controllers.FacebookController.generateXlsFile(ids: String)
