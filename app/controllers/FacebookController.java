@@ -28,13 +28,9 @@ import play.mvc.Result;
 import views.html.fbComments;
 import views.html.fbPosts;
 import crawler.FacebookCrawler;
-import dao.FacebookCommentDAO;
-import dao.FacebookPostDAO;
 
 public class FacebookController extends Controller {
 
-	private static final FacebookPostDAO fbPostDao = Global.getFbPostDao();
-	private static final FacebookCommentDAO fbCommentDao = Global.getFbCommentDao();
 	private static final FacebookCrawler crawler = Global.getCrawler();
 
 	public static Result index(String sourceId, String sourceName) {
@@ -57,22 +53,17 @@ public class FacebookController extends Controller {
 	}
 
 	public static Result fbComments(int page, String sortBy, String order, String filter, String postId) {
-		String sourceId = postId.split("_")[0];
-		return ok(fbComments.render(fbCommentDao.page(page, 10, sortBy, order, filter, sourceId, postId), sortBy, order, filter, postId));
+		return ok(fbComments.render(FBComment.list(page, 10, sortBy, order, filter, postId), sortBy, order, filter, postId));
 	}
 
 	public static Result fetchCommentsFromPostKey(String postId) {
 		List<FBComment> comments = crawler.fetchCommentsFromPostId(postId);
-		FBPost post = fbPostDao.get(postId, postId);
 
-		if (post != null) {
-			post.comments = comments;
-			fbPostDao.save(post);
-
-			return comments(postId);
-		} else {
-			return index("", "");
+		for (FBComment fbComment : comments) {
+			fbComment.save();
 		}
+
+		return comments(postId);
 	}
 
 	public static Result fetchPosts(String profileId, Integer limit) {
@@ -99,7 +90,7 @@ public class FacebookController extends Controller {
 	public static Result generateXlsFile(String ids) {
 		String[] tmpIdList = ids.split(",");
 
-		List<FBComment> comments = fbCommentDao.listCommentsById(Arrays.asList(tmpIdList));
+		List<FBComment> comments = FBComment.listCommentsById(Arrays.asList(tmpIdList));
 
 		HSSFWorkbook workbook = new HSSFWorkbook();
 		HSSFSheet sheet = workbook.createSheet("Comments");

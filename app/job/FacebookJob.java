@@ -12,21 +12,7 @@ import org.quartz.Job;
 import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;
 
-import dao.FacebookCommentDAO;
-import dao.FacebookFeedDAO;
-import dao.FacebookPostDAO;
-
 public class FacebookJob implements Job {
-
-	private FacebookPostDAO fbPostDao;
-	//private FacebookCommentDAO fbCommentDao;
-	private FacebookFeedDAO fbProfileDao;
-
-	public FacebookJob(FacebookPostDAO fbPostDao, FacebookCommentDAO fbCommentDao, FacebookFeedDAO fbProfileDao) {
-		this.fbPostDao = fbPostDao;
-		//this.fbCommentDao = fbCommentDao;
-		this.fbProfileDao = fbProfileDao;
-	}
 
 	private static final int FETCH_SIZE = 1000;
 

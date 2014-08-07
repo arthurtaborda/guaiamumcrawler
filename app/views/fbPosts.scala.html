@@ -4,7 +4,7 @@
 @import helper.twitterBootstrap._
 @import tags._
 
-@link(newProfile:Int, newSortBy:String, newProfileName: String) = @{
+@link(newProfile:Int, newSortBy:String, newProfileName: String, prefFirstOrder:String) = @{
 
 	var sortBy = currentSortBy
 	var order = currentOrder
@@ -21,7 +21,11 @@
 		if(currentSortBy == newSortBy) {
 			if(currentOrder == "") {
 				order = "-"
+			} else {
+				order = ""
 			}
+		} else {
+			order = prefFirstOrder
 		}
 	}
 
@@ -39,7 +43,7 @@
 @main(actionButtons) {
 
 	<div class="pull-left">
-		@searchBox(currentFilter, link(1, "createdTime", null))
+		@searchBox(currentFilter, link(1, "createdTime", null, ""))
 	</div>
 
 	<div class="pull-right">
@@ -66,12 +70,12 @@
 			<table class="table table-striped table-bordered table-condensed">
 				<thead>
 					<tr>
-						@header("createdTime", "Date", currentSortBy, currentOrder, link(1, "createdTime", null))
-						@header("profile.name", "Profile Name", currentSortBy, currentOrder, link(1, "profile.name", null))
-						@header("message", "Message", currentSortBy, currentOrder, link(1, "message", null))
-						@header("commentCount", "Comments", currentSortBy, currentOrder, link(1, "commentCount", null))
-						@header("likeCount", "Likes", currentSortBy, currentOrder, link(1, "likeCount", null))
-						@header("shareCount", "Shares", currentSortBy, currentOrder, link(1, "shareCount", null))
+						@header("createdTime", "Date", currentSortBy, currentOrder, link(1, "createdTime", null, "-"))
+						@header("profile.name", "Profile Name", currentSortBy, currentOrder, link(1, "profile.name", null, "-"))
+						@header("message", "Message", currentSortBy, currentOrder, link(1, "message", null, ""))
+						@header("commentCount", "Comments", currentSortBy, currentOrder, link(1, "commentCount", null, "-"))
+						@header("likeCount", "Likes", currentSortBy, currentOrder, link(1, "likeCount", null, "-"))
+						@header("shareCount", "Shares", currentSortBy, currentOrder, link(1, "shareCount", null, "-"))
 					</tr>
 				</thead>
 				<tbody>
@@ -94,6 +98,6 @@
 			</table>
 		</div>
 
-		@pagination(currentPage, link(1, null, null), link(currentPage.pageIndex - 1, null, null), link(currentPage.pageIndex + 1, null, null), link(0, null, null))
+		@pagination(currentPage, link(1, null, null, ""), link(currentPage.pageIndex - 1, null, null, ""), link(currentPage.pageIndex + 1, null, null, ""), link(0, null, null, ""))
 	}
 }

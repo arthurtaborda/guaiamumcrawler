@@ -22,6 +22,7 @@ import org.jongo.MongoCollection;
 import uk.co.panaxiom.playjongo.PlayJongo;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.Lists;
 
 /**
@@ -30,6 +31,7 @@ import com.google.common.collect.Lists;
  */
 public class FBPost {
 
+	@JsonProperty("_id")
 	public String id;
 
 	public String message;
@@ -102,17 +104,17 @@ public class FBPost {
 		Pattern regex = Pattern.compile(filter, Pattern.CASE_INSENSITIVE);
 		Find f = db("fbposts").find("{message: #}", regex);
 
-		return listPosts(page, limit, sort, order, filter, f);
+		return list(page, limit, sort, order, filter, f);
 	}
 
 	public static Page<FBPost> list(int page, int limit, String sort, String order, String filter, String profileId) {
 		Pattern regex = Pattern.compile(filter, Pattern.CASE_INSENSITIVE);
 		Find f = db("fbposts").find("{message: #, profileId: #}", regex, profileId);
 
-		return listPosts(page, limit, sort, order, filter, f);
+		return list(page, limit, sort, order, filter, f);
 	}
 
-	private static Page<FBPost> listPosts(int page, int limit, String sort, String order, String filter, Find f) {
+	private static Page<FBPost> list(int page, int limit, String sort, String order, String filter, Find f) {
 		List<FBPost> data = new ArrayList<>();
 		int total = f.as(FBPost.class).count();
 		page = Page.adjustPage(page, total, limit);

@@ -27,7 +27,7 @@ public class FacebookCrawler {
 
 	public List<FBComment> fetchCommentsFromPostId(String postId) {
 		Connection<JsonObject> connection = facebookClient.fetchConnection(postId + "/comments", JsonObject.class,
-				Parameter.with("fields", "from,message,like_count,created_time"), Parameter.with("limit", 250));
+				Parameter.with("fields", "from,message,like_count,created_time"), Parameter.with("filter", "stream"));
 
 		List<FBComment> comments = new ArrayList<FBComment>();
 
@@ -47,6 +47,8 @@ public class FacebookCrawler {
 					fbAuthor.save();
 				}
 
+				fbComment.authorId = fbAuthor.id;
+				fbComment.postId = postId;
 				fbComment.likeCount = c.getLikeCount();
 				fbComment.message = c.getMessage();
 				fbComment.createdTime = c.getCreatedTime();
