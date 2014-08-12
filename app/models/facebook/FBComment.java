@@ -11,6 +11,7 @@ import java.util.Set;
 import java.util.regex.Pattern;
 
 import models.Page;
+import models.facebook.profile.FBProfile;
 
 import org.jongo.Find;
 import org.jongo.MongoCollection;

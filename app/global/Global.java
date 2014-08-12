@@ -4,6 +4,7 @@ import job.FacebookJob;
 
 import org.quartz.JobBuilder;
 import org.quartz.JobDetail;
+import org.quartz.JobKey;
 import org.quartz.Scheduler;
 import org.quartz.SchedulerException;
 import org.quartz.SchedulerFactory;
@@ -28,7 +29,6 @@ public class Global extends GlobalSettings {
 		return crawler;
 	}
 
-	@SuppressWarnings("unused")
 	private void schedule() throws SchedulerException {
 		SchedulerFactory schedFact = new org.quartz.impl.StdSchedulerFactory();
 
@@ -36,21 +36,25 @@ public class Global extends GlobalSettings {
 
 		sched.start();
 
-		//@formatter:off
-		JobDetail job = JobBuilder.newJob(FacebookJob.class)
-				.withIdentity("fbJob", "group1")
-			    .usingJobData("sourceFile", "facebookSources")
-				.build();
+		boolean exists = sched.checkExists(new JobKey("fbJob", "group1"));
 
-		Trigger trigger = TriggerBuilder.newTrigger()
-				.withIdentity("fbTrigger", "group1").startNow()
-				.withSchedule(SimpleScheduleBuilder.simpleSchedule()
-						.withIntervalInHours(5)
-						.repeatForever())
+		if (!exists) {
+			//@formatter:off
+			JobDetail job = JobBuilder.newJob(FacebookJob.class)
+					.withIdentity("fbJob", "group1")
+				    .usingJobData("sourceFile", "facebookSources")
 					.build();
-		//@formatter:on
 
-		sched.scheduleJob(job, trigger);
+			Trigger trigger = TriggerBuilder.newTrigger()
+					.withIdentity("fbTrigger", "group1").startNow()
+					.withSchedule(SimpleScheduleBuilder.simpleSchedule()
+							.withIntervalInHours(5)
+							.repeatForever())
+						.build();
+			//@formatter:on
+
+			sched.scheduleJob(job, trigger);
+		}
 	}
 
 	public void onStart(Application app) {
@@ -60,13 +64,13 @@ public class Global extends GlobalSettings {
 		FacebookClient fbClient = new DefaultFacebookClient(new DefaultFacebookClient().obtainAppAccessToken(appId, appSecret).getAccessToken());
 		crawler = new FacebookCrawler(fbClient);
 
-		//		try {
-		//			Logger.info("Loading jobs...");
-		//			schedule();
-		//			Logger.info("Jobs loaded sucessfully");
-		//		} catch (SchedulerException e1) {
-		//			e1.printStackTrace();
-		//		}
+		try {
+			Logger.info("Loading jobs...");
+			schedule();
+			Logger.info("Jobs loaded sucessfully");
+		} catch (SchedulerException e1) {
+			e1.printStackTrace();
+		}
 
 		Logger.info("Application has started");
 	}

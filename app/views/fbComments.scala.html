@@ -79,9 +79,7 @@
 						<td style="white-space: nowrap">
 							<a title="Go to the user page on facebook" href="http://www.facebook.com/@comment.author.id" target="_blank">@comment.author.name</a>
 						</td>
-						<td>
-							@comment.message
-						</td>
+						<td>@{if (comment.message == null) "[NO MESSAGE]" else comment.message}</td>
 					</tr>
 				}
 			</tbody>

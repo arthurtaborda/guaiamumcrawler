@@ -14,9 +14,8 @@ import java.util.Map;
 import java.util.Set;
 
 import models.facebook.FBComment;
-import models.facebook.FBFeed;
 import models.facebook.FBPost;
-import models.facebook.FBProfile;
+import models.facebook.profile.FBProfile;
 
 import org.apache.poi.hssf.usermodel.HSSFSheet;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
@@ -69,18 +68,19 @@ public class FacebookController extends Controller {
 	public static Result fetchPosts(String profileId, Integer limit) {
 		FBProfile fbProfile = null;
 
-		fbProfile = crawler.fetchProfileFeed(profileId);
+		fbProfile = crawler.fetchProfile(profileId);
 
-		List<FBPost> posts = crawler.fetchPosts(fbProfile.id, fbProfile.getType(), limit);
-
-		if (fbProfile.feed == null)
-			fbProfile.feed = new FBFeed();
+		List<FBPost> posts = crawler.fetchPosts(fbProfile, limit);
 
 		fbProfile.feed.posts = posts;
 		fbProfile.feed.lastTimeScanned = (new Date()).getTime();
 
 		fbProfile.save();
 		for (FBPost fbPost : posts) {
+			if (FBProfile.get(fbPost.authorId) == null) {
+				fbPost.author.save();
+			}
+
 			fbPost.save();
 		}
 

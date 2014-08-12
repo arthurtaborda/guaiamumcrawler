@@ -1,14 +1,18 @@
 package crawler;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Set;
 
 import models.facebook.FBComment;
-import models.facebook.FBGroup;
-import models.facebook.FBPage;
+import models.facebook.FBFeed;
 import models.facebook.FBPost;
-import models.facebook.FBProfile;
-import models.facebook.FBUser;
+import models.facebook.profile.FBGroup;
+import models.facebook.profile.FBPage;
+import models.facebook.profile.FBProfile;
+import models.facebook.profile.FBUser;
 
 import com.restfb.Connection;
 import com.restfb.FacebookClient;
@@ -60,101 +64,118 @@ public class FacebookCrawler {
 		return comments;
 	}
 
-	public FBProfile fetchProfileFeed(String profileId) {
-		JsonObject feed = facebookClient.fetchObject("v2.0/" + profileId, JsonObject.class, Parameter.with("fields", "name"), Parameter.with("metadata", true));
+	public FBProfile fetchProfile(String profileId) {
+		JsonObject feed = null;
+
+		try {
+			feed = facebookClient.fetchObject("v2.0/" + profileId, JsonObject.class, Parameter.with("fields", "name,username"),
+					Parameter.with("metadata", true));
+		} catch (Exception e) {
+			feed = facebookClient.fetchObject("v2.0/" + profileId, JsonObject.class, Parameter.with("fields", "name,email"), Parameter.with("metadata", true));
+		}
 
 		profileId = feed.getString("id");
+
+		String username = null;
 		String profileName = feed.getString("name");
 		String type = feed.getJsonObject("metadata").getString("type");
-
 		FBProfile profile = FBProfile.get(profileId);
+
+		try {
+			username = feed.getString("username");
+		} catch (Exception e) {
+			username = null;
+		}
 		if (profile == null) {
 			if (type.equals("page")) {
-				profile = new FBPage(profileId, profileName);
+				profile = new FBPage(profileId, profileName, username);
 			} else if (type.equals("group")) {
-				profile = new FBGroup(profileId, profileName);
+				username = feed.getString("email").split("@")[0];
+				profile = new FBGroup(profileId, profileName, username);
 			} else if (type.equals("user")) {
-				profile = new FBUser(profileId, profileName);
+				profile = new FBUser(profileId, profileName, username);
 			}
 		}
+
+		if (profile.feed == null)
+			profile.feed = new FBFeed();
 
 		return profile;
 	}
 
-	public List<FBPost> fetchPosts(String sourceId, String sourceType, Integer limit) {
-		return fetchPosts(sourceId, sourceType, limit, new Parameter[] {});
+	public List<FBPost> fetchPosts(FBProfile profile, Integer limit) {
+		return fetchPosts(profile, limit, new Parameter[] {});
 	}
 
-	public List<FBPost> fetchPostsSince(String sourceId, String sourceType, Integer limit, Long since) {
-		return fetchPosts(sourceId, sourceType, limit, Parameter.with("since", since));
+	public List<FBPost> fetchPostsSince(FBProfile profile, Integer limit, Long since) {
+		return fetchPosts(profile, limit, Parameter.with("since", since));
 	}
 
-	public List<FBPost> fetchPostsUntil(String sourceId, String sourceType, Integer limit, Long until) {
-		return fetchPosts(sourceId, sourceType, limit, Parameter.with("until", until));
+	public List<FBPost> fetchPostsUntil(FBProfile profile, Integer limit, Long until) {
+		return fetchPosts(profile, limit, Parameter.with("until", until));
 	}
 
-	public List<FBPost> fetchPosts(String profileId, String profileType, Integer limit, Long since, Long until) {
-		return fetchPosts(profileId, profileType, limit, Parameter.with("since", since), Parameter.with("until", until));
+	public List<FBPost> fetchPosts(FBProfile profile, Integer limit, Long since, Long until) {
+		return fetchPosts(profile, limit, Parameter.with("since", since), Parameter.with("until", until));
 	}
 
-	private List<FBPost> fetchPosts(String profileId, String profileType, Integer limit, Parameter... parameters) {
+	private List<FBPost> fetchPosts(FBProfile profile, Integer limit, Parameter... parameters) {
 		List<FBPost> posts = new ArrayList<FBPost>();
+		String profileId = profile.id;
+		String profileType = profile.getType();
 
 		String feedUrl = "/posts";
 		if (profileType.equals("group"))
 			feedUrl = "/feed";
 
-		Parameter[] param = new Parameter[parameters.length + 2];
-		param[parameters.length] = Parameter.with("limit", limit);
-		param[parameters.length + 1] = Parameter.with("fields",
-				"status_type,from,id,message,link,created_time,shares,likes.limit(1).summary(true),comments.limit(1).summary(true)");
+		List<Parameter> list = new LinkedList<Parameter>(Arrays.asList(parameters));
+		list.add(Parameter.with("limit", limit));
+		list.add(Parameter.with("fields", "status_type,from,id,message,link,created_time,shares,likes.limit(1).summary(true),comments.limit(1).summary(true)"));
 
-		Connection<JsonObject> connection = facebookClient.fetchConnection("v2.0/" + profileId + feedUrl, JsonObject.class, param);
+		Parameter[] param = new Parameter[list.size()];
+		Connection<JsonObject> connection = facebookClient.fetchConnection("v2.0/" + profileId + feedUrl, JsonObject.class, list.toArray(param));
 
 		int i = 0;
+		Set<String> ids = FBPost.getIds();
 		for (List<JsonObject> jsonObjects : connection) {
 			for (JsonObject jsonObject : jsonObjects) {
 				Post p = facebookClient.getJsonMapper().toJavaObject(jsonObject.toString(), Post.class);
+				String postId = p.getId();
 
 				// if is null, this type of post is useless, because it has
 				// no comments or messages. It only happens with pages
 				// apparently.
-				if (profileType.equals("page") && p.getStatusType() == null) {
+				if (profileType.equals("page") && p.getStatusType() == null || ids.contains(postId)) {
 					continue;
+				} else {
+					ids.add(postId);
 				}
 
-				String postId = p.getId();
-
-				if (!FBPost.exists(postId)) {
-					FBPost fbPost = new FBPost(postId);
-					FBProfile fbAuthor = FBProfile.get(p.getFrom().getId());
-
-					if (fbAuthor == null) {
-						// if this is coming from a group, the author must be
-						// user.
-						if (profileType.equals("group") || profileType.equals("user")) {
-							fbAuthor = new FBUser(p.getFrom().getId(), p.getFrom().getName());
-						} else {
-							fbAuthor = new FBPage(p.getFrom().getId(), p.getFrom().getName());
-						}
-						fbAuthor.save();
-					}
-
-					fbPost.id = postId;
-					fbPost.profileId = profileId;
-					fbPost.authorId = fbAuthor.id;
-					fbPost.message = p.getMessage() == null || p.getMessage().isEmpty() ? "<NO MESSAGE>" : p.getMessage();
-					fbPost.createdTime = p.getCreatedTime();
-					fbPost.commentCount = !jsonObject.has("comments") ? 0 : jsonObject.getJsonObject("comments").getJsonObject("summary")
-							.getLong("total_count");
-					fbPost.likeCount = !jsonObject.has("likes") ? 0 : jsonObject.getJsonObject("likes").getJsonObject("summary").getLong("total_count");
-					fbPost.shareCount = p.getSharesCount();
-
-					posts.add(fbPost);
-					i++;
-					if (i >= limit)
-						break;
+				FBProfile fbAuthor = null;
+				if (profileType.equals("group") || profileType.equals("user")) {
+					fbAuthor = new FBUser(p.getFrom().getId(), p.getFrom().getName());
+				} else {
+					fbAuthor = new FBPage(p.getFrom().getId(), p.getFrom().getName());
 				}
+
+				FBPost fbPost = new FBPost(postId);
+
+				fbPost.id = postId;
+				fbPost.profile = profile;
+				fbPost.profileId = profileId;
+				fbPost.author = fbAuthor;
+				fbPost.authorId = p.getFrom().getId();
+				fbPost.message = p.getMessage();
+				fbPost.createdTime = p.getCreatedTime();
+				fbPost.commentCount = !jsonObject.has("comments") ? 0 : jsonObject.getJsonObject("comments").getJsonObject("summary").getLong("total_count");
+				fbPost.likeCount = !jsonObject.has("likes") ? 0 : jsonObject.getJsonObject("likes").getJsonObject("summary").getLong("total_count");
+				fbPost.shareCount = p.getSharesCount();
+
+				posts.add(fbPost);
+				i++;
+				if (i >= limit)
+					break;
+
 			}
 			if (i >= limit) {
 				return posts;
@@ -163,5 +184,4 @@ public class FacebookCrawler {
 
 		return posts;
 	}
-
 }

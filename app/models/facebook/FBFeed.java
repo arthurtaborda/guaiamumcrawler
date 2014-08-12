@@ -2,6 +2,8 @@ package models.facebook;
 
 import java.util.List;
 
+import models.facebook.profile.FBProfile;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 public class FBFeed {
@@ -19,6 +21,7 @@ public class FBFeed {
 	public List<FBPost> posts;
 
 	public FBFeed() {
+		this.totallyScanned = false;
 	}
 
 	public FBFeed(List<FBPost> posts) {

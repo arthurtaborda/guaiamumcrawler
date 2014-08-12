@@ -1,4 +1,4 @@
-package models.facebook;
+package models.facebook.profile;
 
 public class FBPage extends FBProfile {
 
@@ -11,6 +11,10 @@ public class FBPage extends FBProfile {
 
 	public FBPage(String id, String name) {
 		super(id, name);
+	}
+
+	public FBPage(String id, String name, String username) {
+		super(id, name, username);
 	}
 
 	@Override

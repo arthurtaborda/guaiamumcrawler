@@ -1,9 +1,12 @@
-package models.facebook;
+package models.facebook.profile;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import models.facebook.FBFeed;
+import models.facebook.FBPost;
 
 import org.jongo.MongoCollection;
 
@@ -23,6 +26,8 @@ public abstract class FBProfile {
 
 	public String name;
 
+	public String username;
+
 	public FBFeed feed;
 
 	@JsonIgnore
@@ -38,6 +43,12 @@ public abstract class FBProfile {
 	public FBProfile(String id, String name) {
 		this.id = id;
 		this.name = name;
+	}
+
+	public FBProfile(String id, String name, String username) {
+		this.id = id;
+		this.name = name;
+		this.username = username;
 	}
 
 	public void setId() {
@@ -65,11 +76,11 @@ public abstract class FBProfile {
 
 		Map<String, FBProfile> map = new HashMap<>();
 		for (FBProfile p : profiles) {
-			map.put(p.id, p);
-			System.out.println(p);
+			if (p.id != null)
+				map.put(p.id, p);
 		}
 
-		List<FBPost> posts = Lists.newArrayList(db("fbposts").find().as(FBPost.class).iterator());
+		List<FBPost> posts = Lists.newArrayList(db("fbposts").find("{profileId: {$exists: #}}", true).as(FBPost.class).iterator());
 		for (FBPost p : posts) {
 			if (map.get(p.profileId).feed.posts == null) {
 				map.get(p.profileId).feed.posts = new ArrayList<>();
@@ -86,7 +97,13 @@ public abstract class FBProfile {
 	}
 
 	public static FBProfile get(String id) {
-		return db("fbprofiles").findOne("{_id: #}", id).as(FBProfile.class);
+		FBProfile p = db("fbprofiles").findOne("{_id: #}", id).as(FBProfile.class);
+
+		if (p == null) {
+			p = db("fbprofiles").findOne("{username: #}", id).as(FBProfile.class);
+		}
+
+		return p;
 	}
 
 	public static Boolean exists(String id) {

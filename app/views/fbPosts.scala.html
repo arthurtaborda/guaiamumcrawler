@@ -1,4 +1,4 @@
-@(currentPage: Page[models.facebook.FBPost], currentSortBy: String, currentOrder: String, currentFilter: String, currentProfileId: String, currentProfileName: String, profiles: List[models.facebook.FBProfile])
+@(currentPage: Page[models.facebook.FBPost], currentSortBy: String, currentOrder: String, currentFilter: String, currentProfileId: String, currentProfileName: String, profiles: List[models.facebook.profile.FBProfile])
 
 @import org.joda.time.DateTime
 @import helper.twitterBootstrap._
@@ -86,7 +86,7 @@
 								@(new DateTime(post.createdTime).toString("HH:mm:ss dd/MM/yyyy"))
 							</td>
 							<td><a href="@post.profile.getLink" target="_blank">@post.profile.name</a></td>
-							<td><a href="@post.getLink" target="_blank">@post.message</a></td>
+							<td><a href="@post.getLink" target="_blank">@{if (post.message == null) "[NO MESSAGE]" else post.message}</a></td>
 							<td>
 								<a href="@routes.FacebookController.fbComments(0,"createdTime","", "", post.id)" title="Open comments of this post">@post.commentCount</a>
 							</td>

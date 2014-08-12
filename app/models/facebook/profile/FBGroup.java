@@ -1,6 +1,9 @@
-package models.facebook;
+package models.facebook.profile;
 
 public class FBGroup extends FBProfile {
+
+	public FBGroup() {
+	}
 
 	public FBGroup(String id) {
 		super(id);
@@ -8,6 +11,10 @@ public class FBGroup extends FBProfile {
 
 	public FBGroup(String id, String name) {
 		super(id, name);
+	}
+
+	public FBGroup(String id, String name, String username) {
+		super(id, name, username);
 	}
 
 	@Override

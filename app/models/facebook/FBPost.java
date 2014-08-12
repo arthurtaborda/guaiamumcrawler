@@ -15,6 +15,7 @@ import java.util.Set;
 import java.util.regex.Pattern;
 
 import models.Page;
+import models.facebook.profile.FBProfile;
 
 import org.jongo.Find;
 import org.jongo.MongoCollection;
@@ -24,6 +25,7 @@ import uk.co.panaxiom.playjongo.PlayJongo;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 
 /**
  * @author arthur
@@ -142,6 +144,18 @@ public class FBPost {
 		}
 
 		return new Page<>(data, total, page, limit);
+	}
+
+	public static Set<String> getIds() {
+		Iterator<FBPost> it = db("fbposts").find("{}, {_id: 1}").as(FBPost.class).iterator();
+
+		Set<String> ids = Sets.newHashSet();
+		while (it.hasNext()) {
+			FBPost post = it.next();
+			ids.add(post.id);
+		}
+
+		return ids;
 	}
 
 	public void save() {
