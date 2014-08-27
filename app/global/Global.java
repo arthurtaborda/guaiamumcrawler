@@ -15,18 +15,27 @@ import org.quartz.TriggerBuilder;
 import play.Application;
 import play.GlobalSettings;
 import play.Logger;
+import twitter4j.Twitter;
+import twitter4j.TwitterFactory;
+import twitter4j.auth.AccessToken;
 
 import com.restfb.DefaultFacebookClient;
 import com.restfb.FacebookClient;
 
 import crawler.FacebookCrawler;
+import crawler.TwitterCrawler;
 
 public class Global extends GlobalSettings {
 
-	private static FacebookCrawler crawler;
+	private static TwitterCrawler ttCrawler;
+	private static FacebookCrawler fbCrawler;
 
-	public static FacebookCrawler getCrawler() {
-		return crawler;
+	public static TwitterCrawler getTwitterCrawler() {
+		return ttCrawler;
+	}
+
+	public static FacebookCrawler getFacebookCrawler() {
+		return fbCrawler;
 	}
 
 	private void schedule() throws SchedulerException {
@@ -58,15 +67,35 @@ public class Global extends GlobalSettings {
 	}
 
 	public void onStart(Application app) {
-		String appId = app.configuration().getString("fb.id");
-		String appSecret = app.configuration().getString("fb.secret");
+		if (fbCrawler == null) {
+			String fbAppId = app.configuration().getString("fb.id");
+			String fbAppSecret = app.configuration().getString("fb.secret");
 
-		FacebookClient fbClient = new DefaultFacebookClient(new DefaultFacebookClient().obtainAppAccessToken(appId, appSecret).getAccessToken());
-		crawler = new FacebookCrawler(fbClient);
+			FacebookClient fbClient = new DefaultFacebookClient(new DefaultFacebookClient().obtainAppAccessToken(fbAppId, fbAppSecret).getAccessToken());
+			fbCrawler = new FacebookCrawler(fbClient);
+		}
+
+		if (ttCrawler == null) {
+			String ttAppId = app.configuration().getString("tt.key");
+			String ttAppSecret = app.configuration().getString("tt.secret");
+			String ttToken = app.configuration().getString("tt.token.key");
+			String ttTokenSecret = app.configuration().getString("tt.token.secret");
+
+			Twitter twitter = TwitterFactory.getSingleton();
+
+			try {
+				twitter.setOAuthConsumer(ttAppId, ttAppSecret);
+				twitter.setOAuthAccessToken(new AccessToken(ttToken, ttTokenSecret));
+			} catch (Exception e) {
+			}
+
+			ttCrawler = new TwitterCrawler(twitter);
+		}
 
 		try {
 			Logger.info("Loading jobs...");
-			schedule();
+			if (false)
+				schedule();
 			Logger.info("Jobs loaded sucessfully");
 		} catch (SchedulerException e1) {
 			e1.printStackTrace();

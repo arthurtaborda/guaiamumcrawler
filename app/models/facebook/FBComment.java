@@ -14,13 +14,12 @@ import models.Page;
 import models.facebook.profile.FBProfile;
 
 import org.jongo.Find;
-import org.jongo.MongoCollection;
-
-import uk.co.panaxiom.playjongo.PlayJongo;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.Lists;
+
+import db.Mongo;
 
 /**
  *
@@ -80,13 +79,9 @@ public class FBComment {
 				+ likeCount + "]";
 	}
 
-	private static MongoCollection db(String name) {
-		return PlayJongo.getCollection(name);
-	}
-
 	public static Page<FBComment> list(int page, int limit, String sort, String order, String filter, String postId) {
 		Pattern regex = Pattern.compile(filter, Pattern.CASE_INSENSITIVE);
-		Find f = db("fbcomments").find("{message: #, postId: #}", regex, postId);
+		Find f = Mongo.get("fbcomments").find("{message: #, postId: #}", regex, postId);
 
 		List<FBComment> data = new ArrayList<>();
 		int total = f.as(FBComment.class).count();
@@ -102,7 +97,7 @@ public class FBComment {
 				ids.add(fbComment.authorId);
 			}
 
-			List<FBProfile> authors = Lists.newArrayList(db("fbprofiles").find("{_id: { $in: #}}", ids).as(FBProfile.class).iterator());
+			List<FBProfile> authors = Lists.newArrayList(Mongo.get("fbprofiles").find("{_id: { $in: #}}", ids).as(FBProfile.class).iterator());
 
 			Map<String, FBProfile> profileMap = new HashMap<>();
 			for (FBProfile fbProfile : authors) {
@@ -118,10 +113,10 @@ public class FBComment {
 	}
 
 	public static List<FBComment> listCommentsById(List<String> ids) {
-		return Lists.newArrayList(db("fbcomments").find("{_id: { $in: #}}", ids).as(FBComment.class).iterator());
+		return Lists.newArrayList(Mongo.get("fbcomments").find("{_id: { $in: #}}", ids).as(FBComment.class).iterator());
 	}
 
 	public void save() {
-		db("fbcomments").save(this);
+		Mongo.get("fbcomments").save(this);
 	}
 }

@@ -8,15 +8,13 @@ import java.util.Map;
 import models.facebook.FBFeed;
 import models.facebook.FBPost;
 
-import org.jongo.MongoCollection;
-
-import uk.co.panaxiom.playjongo.PlayJongo;
-
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeInfo.Id;
 import com.google.common.collect.Lists;
+
+import db.Mongo;
 
 @JsonTypeInfo(use = Id.CLASS, property = "_class")
 public abstract class FBProfile {
@@ -66,13 +64,10 @@ public abstract class FBProfile {
 		return "FBProfile [id=" + id + ", name=" + name + ", feed=" + feed + ", link=" + link + "]";
 	}
 
-	private static MongoCollection db(String name) {
-		return PlayJongo.getCollection(name);
-	}
-
 	public static List<FBProfile> listSources() {
-		List<String> ids = db("fbposts").distinct("profileId").as(String.class);
-		List<FBProfile> profiles = Lists.newArrayList(db("fbprofiles").find("{_id: { $in: #}, feed: {$exists: #}}", ids, true).as(FBProfile.class).iterator());
+		List<String> ids = Mongo.get("fbposts").distinct("profileId").as(String.class);
+		List<FBProfile> profiles = Lists.newArrayList(Mongo.get("fbprofiles").find("{_id: { $in: #}, feed: {$exists: #}}", ids, true).as(FBProfile.class)
+				.iterator());
 
 		Map<String, FBProfile> map = new HashMap<>();
 		for (FBProfile p : profiles) {
@@ -80,7 +75,7 @@ public abstract class FBProfile {
 				map.put(p.id, p);
 		}
 
-		List<FBPost> posts = Lists.newArrayList(db("fbposts").find("{profileId: {$exists: #}}", true).as(FBPost.class).iterator());
+		List<FBPost> posts = Lists.newArrayList(Mongo.get("fbposts").find("{profileId: {$exists: #}}", true).as(FBPost.class).iterator());
 		for (FBPost p : posts) {
 			if (map.get(p.profileId).feed.posts == null) {
 				map.get(p.profileId).feed.posts = new ArrayList<>();
@@ -93,14 +88,14 @@ public abstract class FBProfile {
 	}
 
 	public void save() {
-		db("fbprofiles").save(this);
+		Mongo.get("fbprofiles").save(this);
 	}
 
 	public static FBProfile get(String id) {
-		FBProfile p = db("fbprofiles").findOne("{_id: #}", id).as(FBProfile.class);
+		FBProfile p = Mongo.get("fbprofiles").findOne("{_id: #}", id).as(FBProfile.class);
 
 		if (p == null) {
-			p = db("fbprofiles").findOne("{username: #}", id).as(FBProfile.class);
+			p = Mongo.get("fbprofiles").findOne("{username: #}", id).as(FBProfile.class);
 		}
 
 		return p;

@@ -30,7 +30,7 @@ import crawler.FacebookCrawler;
 
 public class FacebookController extends Controller {
 
-	private static final FacebookCrawler crawler = Global.getCrawler();
+	private static final FacebookCrawler crawler = Global.getFacebookCrawler();
 
 	public static Result index(String sourceId, String sourceName) {
 		return redirect(routes.FacebookController.fbPosts(1, "createdTime", "-", "", sourceId, sourceName));
@@ -43,7 +43,6 @@ public class FacebookController extends Controller {
 	public static Result fbPosts(int page, String sortBy, String order, String filter, String sourceId, String sourceName) {
 		if (sourceId == null || sourceId.isEmpty()) {
 			return ok(fbPosts.render(FBPost.list(page, 10, sortBy, order, filter), sortBy, order, filter, sourceId, sourceName, FBProfile.listSources()));
-
 		} else {
 			return ok(fbPosts.render(FBPost.list(page, 10, sortBy, order, filter, sourceId), sortBy, order, filter, sourceId, sourceName,
 					FBProfile.listSources()));

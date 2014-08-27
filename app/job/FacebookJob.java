@@ -35,7 +35,7 @@ public class FacebookJob implements Job {
 		String sourceFile = dataMap.getString("sourceFile");
 		List<String> sources = getSources(sourceFile);
 
-		FacebookCrawler crawler = Global.getCrawler();
+		FacebookCrawler crawler = Global.getFacebookCrawler();
 		for (final String sourceId : sources) {
 			Logger.debug("Job analysing source " + sourceId);
 			Long averageTimePost = 0l;

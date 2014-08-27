@@ -12,6 +12,9 @@ GET 	/twitter							controllers.TwitterController.index(username ?= "")
 GET 	/twitter/tweets						controllers.TwitterController.ttTweets(p:Int ?= 1, s ?= "uploadDate", o ?= "-", f ?= "", username ?= "")
 
 # Home page
+GET 	/twitter/fetchTweets				controllers.TwitterController.fetchTweets(username ?= "")
+
+# Home page
 GET 	/youtube							controllers.YoutubeController.index(username ?= "")
 
 # Home page
