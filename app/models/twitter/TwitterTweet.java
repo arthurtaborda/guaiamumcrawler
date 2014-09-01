@@ -1,7 +1,6 @@
 package models.twitter;
 
 import java.util.Date;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -16,6 +15,7 @@ import org.jongo.Find;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
 import db.Mongo;
@@ -121,7 +121,7 @@ public class TwitterTweet {
 
 			List<TwitterUser> users = Lists.newArrayList(Mongo.get("ttusers").find("{_id: { $in: #}}", ids).as(TwitterUser.class).iterator());
 
-			Map<Long, TwitterUser> profileMap = new HashMap<>();
+			Map<Long, TwitterUser> profileMap = Maps.newHashMap();
 			for (TwitterUser fbProfile : users) {
 				profileMap.put(fbProfile.id, fbProfile);
 			}

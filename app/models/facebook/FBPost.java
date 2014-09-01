@@ -141,7 +141,7 @@ public class FBPost {
 			}
 		}
 
-		return new Page<>(data, total, page, limit);
+		return new Page<FBPost>(data, total, page, limit);
 	}
 
 	public static Set<String> getIds() {
