@@ -5,7 +5,6 @@ import global.Global;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
@@ -20,6 +19,9 @@ import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;
 
 import play.Logger;
+
+import com.google.common.collect.Lists;
+
 import crawler.FacebookCrawler;
 
 public class FacebookJob implements Job {
@@ -143,7 +145,7 @@ public class FacebookJob implements Job {
 	}
 
 	private List<String> getSources(String sourceFile) {
-		List<String> sources = new ArrayList<>();
+		List<String> sources = Lists.newArrayList();
 
 		BufferedReader reader = null;
 		try {

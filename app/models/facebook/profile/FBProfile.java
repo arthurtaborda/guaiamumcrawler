@@ -1,7 +1,5 @@
 package models.facebook.profile;
 
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -13,6 +11,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeInfo.Id;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 
 import db.Mongo;
 
@@ -69,7 +68,7 @@ public abstract class FBProfile {
 		List<FBProfile> profiles = Lists.newArrayList(Mongo.get("fbprofiles").find("{_id: { $in: #}, feed: {$exists: #}}", ids, true).as(FBProfile.class)
 				.iterator());
 
-		Map<String, FBProfile> map = new HashMap<>();
+		Map<String, FBProfile> map = Maps.newHashMap();
 		for (FBProfile p : profiles) {
 			if (p.id != null)
 				map.put(p.id, p);
@@ -78,7 +77,7 @@ public abstract class FBProfile {
 		List<FBPost> posts = Lists.newArrayList(Mongo.get("fbposts").find("{profileId: {$exists: #}}", true).as(FBPost.class).iterator());
 		for (FBPost p : posts) {
 			if (map.get(p.profileId).feed.posts == null) {
-				map.get(p.profileId).feed.posts = new ArrayList<>();
+				map.get(p.profileId).feed.posts = Lists.newArrayList();
 			}
 
 			map.get(p.profileId).feed.posts.add(p);

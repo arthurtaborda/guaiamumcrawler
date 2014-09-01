@@ -4,10 +4,7 @@
  */
 package models.facebook;
 
-import java.util.ArrayList;
 import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -25,6 +22,7 @@ import uk.co.panaxiom.playjongo.PlayJongo;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
 /**
@@ -117,14 +115,14 @@ public class FBPost {
 	}
 
 	private static Page<FBPost> list(int page, int limit, String sort, String order, String filter, Find f) {
-		List<FBPost> data = new ArrayList<>();
+		List<FBPost> data = Lists.newArrayList();
 		int total = f.as(FBPost.class).count();
 		page = Page.adjustPage(page, total, limit);
 
 		if (total > 0) {
 			f = f.limit(limit).skip((page - 1) * limit).sort("{" + sort + ": " + order + "1}");
 
-			Set<String> ids = new HashSet<>();
+			Set<String> ids = Sets.newHashSet();
 			for (Iterator<FBPost> iterator = f.as(FBPost.class).iterator(); iterator.hasNext();) {
 				FBPost fbPost = iterator.next();
 				data.add(fbPost);
@@ -133,7 +131,7 @@ public class FBPost {
 
 			List<FBProfile> profiles = Lists.newArrayList(db("fbprofiles").find("{_id: { $in: #}}", ids).as(FBProfile.class).iterator());
 
-			Map<String, FBProfile> profileMap = new HashMap<>();
+			Map<String, FBProfile> profileMap = Maps.newHashMap();
 			for (FBProfile fbProfile : profiles) {
 				profileMap.put(fbProfile.id, fbProfile);
 			}

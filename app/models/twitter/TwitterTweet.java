@@ -1,9 +1,7 @@
 package models.twitter;
 
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -107,14 +105,14 @@ public class TwitterTweet {
 	}
 
 	private static Page<TwitterTweet> list(int page, int limit, String sort, String order, String filter, Find f) {
-		List<TwitterTweet> data = new ArrayList<>();
+		List<TwitterTweet> data = Lists.newArrayList();
 		int total = f.as(FBComment.class).count();
 		page = Page.adjustPage(page, total, limit);
 
 		if (total > 0) {
 			f = f.limit(limit).skip((page - 1) * limit).sort("{" + sort + ": " + order + "1}");
 
-			Set<Long> ids = new HashSet<>();
+			Set<Long> ids = Sets.newHashSet();
 			for (Iterator<TwitterTweet> iterator = f.as(TwitterTweet.class).iterator(); iterator.hasNext();) {
 				TwitterTweet fbComment = iterator.next();
 				data.add(fbComment);
