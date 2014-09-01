@@ -65,6 +65,32 @@ public class TwitterTweet {
 		return ids;
 	}
 
+	public static TwitterTweet getFirstTweet(long id) {
+		return Mongo.get("tweets").find("{userId: #}", id).limit(1).sort("{createdTime: 1}").as(TwitterTweet.class).next();
+	}
+
+	public static long getFirstTweetUnixTime(long id) {
+		TwitterTweet t = getFirstTweet(id);
+
+		if (t != null)
+			return t.createdTime.getTime();
+
+		return 0;
+	}
+
+	public static long getLastTweetUnixTime(long id) {
+		TwitterTweet t = getLastTweet(id);
+
+		if (t != null)
+			return t.createdTime.getTime();
+
+		return 0;
+	}
+
+	public static TwitterTweet getLastTweet(long id) {
+		return Mongo.get("tweets").find("{userId: #}", id).limit(1).sort("{createdTime: -1}").as(TwitterTweet.class).next();
+	}
+
 	public static Page<TwitterTweet> list(int page, int limit, String sort, String order, String filter) {
 		Pattern regex = Pattern.compile(filter, Pattern.CASE_INSENSITIVE);
 		Find f = Mongo.get("tweets").find("{message: #}", regex);

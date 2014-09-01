@@ -2,10 +2,13 @@ package crawler;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
+import models.twitter.TwitterRequest;
 import models.twitter.TwitterTweet;
 import models.twitter.TwitterUser;
 import play.Logger;
+import twitter4j.HttpResponseCode;
 import twitter4j.PagableResponseList;
 import twitter4j.Paging;
 import twitter4j.RateLimitStatus;
@@ -13,8 +16,10 @@ import twitter4j.Status;
 import twitter4j.Twitter;
 import twitter4j.TwitterException;
 import twitter4j.User;
-import akka.japi.Pair;
 
+import com.cybozu.labs.langdetect.Detector;
+import com.cybozu.labs.langdetect.DetectorFactory;
+import com.cybozu.labs.langdetect.LangDetectException;
 import com.google.common.collect.Lists;
 
 public class TwitterCrawler {
@@ -25,53 +30,52 @@ public class TwitterCrawler {
 		this.twitter = twitter;
 	}
 
-	public Pair<Integer, List<TwitterTweet>> getTweets(TwitterUser user, final Integer rateLimit) throws TwitterException {
-		return getTweets(user, user.feed.lastTweetScannedId, rateLimit);
+	public TwitterRequest getTweets(TwitterUser user, final int numberOfRequests) throws TwitterException {
+		return getTweets(user, Long.MAX_VALUE, numberOfRequests);
 	}
 
-	public Pair<Integer, List<TwitterTweet>> getTweets(String username, final Integer rateLimit) throws TwitterException {
-		TwitterUser user = getUser(twitter.showUser(username));
-		long lastId = Long.MAX_VALUE;
+	public TwitterRequest getTweets(String username, final int numberOfRequests) throws TwitterException {
+		TwitterUser user = getUser(username);
 
-		return getTweets(user, lastId, rateLimit);
+		return getTweets(user, Long.MAX_VALUE, numberOfRequests);
 	}
 
-	public RateLimitStatus getRateLimitStatus() throws TwitterException {
-		return twitter.getRateLimitStatus().get("/statuses/user_timeline");
+	public Map<String, RateLimitStatus> getRateLimitStatus() throws TwitterException {
+		return twitter.getRateLimitStatus();
 	}
 
-	private Pair<Integer, List<TwitterTweet>> getTweets(TwitterUser user, Long lastId, final Integer rateLimit) throws TwitterException {
-		//int maxTweets = 3300; //twiter won't let me get more than this in one request
+	public TwitterRequest getTweets(TwitterUser user, long lastId, final Integer numberOfRequests) throws TwitterException {
+		return getTweets(user, 1, lastId, numberOfRequests);
+	}
+
+	public TwitterRequest getTweets(TwitterUser user, long sinceId, long lastId, final int numberOfRequests) throws TwitterException {
 		int count = 200;
 		List<Status> list = null;
 		List<Status> statuses = Lists.newArrayList();
 
-		if (lastId == null || lastId == 0)
-			lastId = 999999999999999999l;
+		if (lastId == 0)
+			lastId = Long.MAX_VALUE;
+		if (sinceId == 0)
+			sinceId = 1;
 
 		int requestCount = 0;
 		do {
 			try {
-				list = twitter.getUserTimeline(user.username, new Paging(1, count, 1, lastId - 1));
+				list = twitter.getUserTimeline(user.username, new Paging(1, count, sinceId, lastId - 1));
 				requestCount++;
 				statuses.addAll(list);
-				Logger.debug("Gathered " + list.size() + " tweets - Total: " + statuses.size());
+				Logger.debug("Gathered " + list.size() + " tweets - Total: " + statuses.size() + " (" + user.username + ")");
 				for (Status t : list)
 					if (t.getId() < lastId)
 						lastId = t.getId();
-				//				if (maxTweets - statuses.size() < count) {
-				//					count = maxTweets - statuses.size();
-				//					user.maxTweetId = lastId;
-				//				}
 			} catch (TwitterException te) {
-				Logger.debug("Couldn't connect: " + te);
-
-				if (te.exceededRateLimitation()) {
-					user.feed.lastTweetScannedId = lastId;
+				if (te.exceededRateLimitation() || te.getErrorCode() == HttpResponseCode.UNAUTHORIZED) {
 					break;
 				}
+
+				continue;
 			}
-		} while (list.size() > 0 && requestCount < rateLimit);
+		} while (list != null && list.size() > 0 && requestCount < numberOfRequests);
 
 		List<TwitterTweet> tweets = new ArrayList<TwitterTweet>();
 		for (Status status : statuses) {
@@ -83,6 +87,14 @@ public class TwitterCrawler {
 			t.message = status.getText();
 			t.userId = status.getUser().getId();
 			t.isRetweet = status.isRetweet();
+
+			try {
+				Detector detector = DetectorFactory.create();
+				detector.append(t.message);
+				t.language = detector.detect();
+			} catch (LangDetectException e) {
+				t.language = null;
+			}
 
 			t.user = user;
 
@@ -98,31 +110,86 @@ public class TwitterCrawler {
 			tweets.add(t);
 		}
 
-		Pair<Integer, List<TwitterTweet>> pair = new Pair<>(requestCount, tweets);
+		boolean gotAllTweets = list != null && (list.size() == 0 || user.tweetCount == list.size());
+		boolean requestLimitReached = requestCount == numberOfRequests;
+		TwitterRequest request = new TwitterRequest(tweets, requestCount, requestLimitReached);
+		request.requestRemaining = this.getRateLimitStatus().get("/statuses/user_timeline").getRemaining();
+		request.gotAllTweets = gotAllTweets;
 
-		return pair;
+		return request;
+	}
+
+	public TwitterUser getUser(String username) throws TwitterException {
+		User u = twitter.showUser(username);
+
+		return getUser(u);
 	}
 
 	private TwitterUser getUser(User u) {
 		TwitterUser user = new TwitterUser(u.getId(), u.getName(), u.getScreenName(), u.getLocation(), u.getDescription(), u.getFollowersCount(),
 				u.getFriendsCount());
 
+		user.tweetCount = u.getStatusesCount();
+
 		return user;
 	}
 
-	public List<TwitterUser> getFollowers(Long userId) throws TwitterException {
+	private TwitterRequest getFollowersOrFriends(String type, String username, long nextCursor, int requests) throws TwitterException {
 		List<TwitterUser> followers = new ArrayList<TwitterUser>();
 
-		ArrayList<User> users = new ArrayList<User>();
-		long nextCursor = -1;
+		List<User> users = Lists.newArrayList();
+		int remaining = requests;
 		do {
-			PagableResponseList<User> usersResponse = twitter.getFollowersList(userId, nextCursor);
-			Logger.debug("size() of first iteration:" + usersResponse.size());
+			PagableResponseList<User> usersResponse = null;
+
+			if (type.equals("followers")) {
+				usersResponse = twitter.getFollowersList(username, nextCursor, 200);
+			} else {
+				usersResponse = twitter.getFriendsList(username, nextCursor, 200);
+			}
+			Logger.debug("Fetching " + usersResponse.size() + " " + type);
 			nextCursor = usersResponse.getNextCursor();
 			users.addAll(usersResponse);
-		} while (nextCursor > 0);
+			remaining--;
+		} while (nextCursor > 0 && remaining > 0);
 
-		return followers;
+		for (User user : users) {
+			followers.add(getUser(user));
+		}
+
+		TwitterRequest request = new TwitterRequest(followers, nextCursor, requests - remaining, remaining == 0);
+
+		return request;
+	}
+
+	public TwitterRequest getFollowers(String username) throws TwitterException {
+		return getFollowers(username, -1);
+	}
+
+	public TwitterRequest getFriends(String username) throws TwitterException {
+		return getFriends(username, -1);
+	}
+
+	public TwitterRequest getFollowers(String username, long cursor) throws TwitterException {
+		Map<String, RateLimitStatus> map = this.getRateLimitStatus();
+		RateLimitStatus rls = map.get("/followers/list");
+		int requests = rls.getRemaining();
+		return getFollowersOrFriends("followers", username, cursor, requests);
+	}
+
+	public TwitterRequest getFriends(String username, long cursor) throws TwitterException {
+		Map<String, RateLimitStatus> map = this.getRateLimitStatus();
+		RateLimitStatus rls = map.get("/friends/list");
+		int requests = rls.getRemaining();
+		return getFollowersOrFriends("friends", username, cursor, requests);
+	}
+
+	public TwitterRequest getFollowers(String username, long cursor, int requests) throws TwitterException {
+		return getFollowersOrFriends("followers", username, cursor, requests);
+	}
+
+	public TwitterRequest getFriends(String username, long cursor, int requests) throws TwitterException {
+		return getFollowersOrFriends("friends", username, cursor, requests);
 	}
 
 }

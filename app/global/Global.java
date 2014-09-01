@@ -1,13 +1,13 @@
 package global;
 
 import job.FacebookJob;
+import job.TwitterJob;
 
 import org.quartz.JobBuilder;
 import org.quartz.JobDetail;
 import org.quartz.JobKey;
 import org.quartz.Scheduler;
 import org.quartz.SchedulerException;
-import org.quartz.SchedulerFactory;
 import org.quartz.SimpleScheduleBuilder;
 import org.quartz.Trigger;
 import org.quartz.TriggerBuilder;
@@ -19,6 +19,8 @@ import twitter4j.Twitter;
 import twitter4j.TwitterFactory;
 import twitter4j.auth.AccessToken;
 
+import com.cybozu.labs.langdetect.DetectorFactory;
+import com.cybozu.labs.langdetect.LangDetectException;
 import com.restfb.DefaultFacebookClient;
 import com.restfb.FacebookClient;
 
@@ -30,6 +32,13 @@ public class Global extends GlobalSettings {
 	private static TwitterCrawler ttCrawler;
 	private static FacebookCrawler fbCrawler;
 
+	private String twitterSource;
+	private String facebookSource;
+	private String language;
+	private String languagePercentage;
+
+	private Scheduler sched;
+
 	public static TwitterCrawler getTwitterCrawler() {
 		return ttCrawler;
 	}
@@ -38,35 +47,65 @@ public class Global extends GlobalSettings {
 		return fbCrawler;
 	}
 
-	private void schedule() throws SchedulerException {
-		SchedulerFactory schedFact = new org.quartz.impl.StdSchedulerFactory();
+	private void scheduleTwitter() throws SchedulerException {
+		boolean ttJobExists = sched.checkExists(new JobKey("ttJob", "twitter"));
 
-		Scheduler sched = schedFact.getScheduler();
-
-		sched.start();
-
-		boolean exists = sched.checkExists(new JobKey("fbJob", "group1"));
-
-		if (!exists) {
+		if (!ttJobExists) {
 			//@formatter:off
-			JobDetail job = JobBuilder.newJob(FacebookJob.class)
-					.withIdentity("fbJob", "group1")
-				    .usingJobData("sourceFile", "facebookSources")
+			JobDetail ttJob = JobBuilder.newJob(TwitterJob.class)
+					.withIdentity("ttJob", "twitter")
+				    .usingJobData("sourceFile", twitterSource)
+				    .usingJobData("language", language)
+				    .usingJobData("languagePercentage", languagePercentage)
 					.build();
 
-			Trigger trigger = TriggerBuilder.newTrigger()
-					.withIdentity("fbTrigger", "group1").startNow()
+			Trigger ttTrigger = TriggerBuilder.newTrigger()
+					.withIdentity("ttTrigger", "twitter").startNow()
 					.withSchedule(SimpleScheduleBuilder.simpleSchedule()
 							.withIntervalInHours(5)
 							.repeatForever())
 						.build();
 			//@formatter:on
 
-			sched.scheduleJob(job, trigger);
+			sched.scheduleJob(ttJob, ttTrigger);
+		}
+	}
+
+	private void scheduleFacebook() throws SchedulerException {
+		boolean fbJobExists = sched.checkExists(new JobKey("fbJob", "facebook"));
+
+		if (!fbJobExists) {
+			//@formatter:off
+			JobDetail fbJob = JobBuilder.newJob(FacebookJob.class)
+					.withIdentity("fbJob", "facebook")
+				    .usingJobData("sourceFile", facebookSource)
+					.build();
+
+			Trigger fbTrigger = TriggerBuilder.newTrigger()
+					.withIdentity("fbTrigger", "facebook").startNow()
+					.withSchedule(SimpleScheduleBuilder.simpleSchedule()
+							.withIntervalInHours(5)
+							.repeatForever())
+						.build();
+			//@formatter:on
+
+			sched.scheduleJob(fbJob, fbTrigger);
 		}
 	}
 
 	public void onStart(Application app) {
+		try {
+			DetectorFactory.loadProfile(play.Play.application().getFile("profiles"));
+		} catch (LangDetectException e2) {
+			e2.printStackTrace();
+		}
+
+		twitterSource = app.configuration().getString("source.file.twitter");
+		facebookSource = app.configuration().getString("source.file.facebook");
+
+		language = app.configuration().getString("language");
+		languagePercentage = app.configuration().getString("languagePercentage");
+
 		if (fbCrawler == null) {
 			String fbAppId = app.configuration().getString("fb.id");
 			String fbAppSecret = app.configuration().getString("fb.secret");
@@ -94,8 +133,10 @@ public class Global extends GlobalSettings {
 
 		try {
 			Logger.info("Loading jobs...");
-			if (false)
-				schedule();
+			sched = new org.quartz.impl.StdSchedulerFactory().getScheduler();
+			sched.start();
+			scheduleTwitter();
+			scheduleFacebook();
 			Logger.info("Jobs loaded sucessfully");
 		} catch (SchedulerException e1) {
 			e1.printStackTrace();

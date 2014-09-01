@@ -9,10 +9,6 @@ public class TwitterFeed {
 	@JsonIgnore
 	public TwitterUser user;
 
-	public Long firstTweetScannedId;
-
-	public Long lastTweetScannedId;
-
 	public Long lastTimeScanned;
 
 	public Long averageTimePost;

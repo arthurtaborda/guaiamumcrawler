@@ -24,19 +24,20 @@ public class TwitterUser {
 
 	public String description;
 
+	public Integer tweetCount;
+
 	public Integer followerCount;
 
 	public Integer followingCount;
 
 	public TwitterFeed feed;
 
+	public boolean toRescan;
+
 	public TwitterUser() {
-		this.feed = new TwitterFeed();
 	}
 
 	public TwitterUser(Long id, String name, String username, String location, String description, Integer followerCount, Integer followingCount) {
-		this();
-
 		this.id = id;
 		this.name = name;
 		this.username = username;
@@ -67,6 +68,12 @@ public class TwitterUser {
 		return ids;
 	}
 
+	public static Set<TwitterUser> getUsersToRescan() {
+		Set<TwitterUser> set = Sets.newHashSet(Mongo.get("ttusers").find("{toRescan: #}", true).as(TwitterUser.class).iterator());
+
+		return set;
+	}
+
 	public void save() {
 		Mongo.get("ttusers").save(this);
 	}
@@ -86,5 +93,19 @@ public class TwitterUser {
 		} catch (NoSuchElementException e) {
 			return null;
 		}
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		boolean equals = false;
+
+		TwitterUser user = null;
+		if (obj instanceof TwitterUser) {
+			user = (TwitterUser) obj;
+
+			if (this.id == user.id || this.username == user.username)
+				equals = true;
+		}
+		return equals;
 	}
 }
